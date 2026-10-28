@@ -1,26 +1,32 @@
-# Authentication and study authorization (POC)
+# ResearchPass POC authentication (temporary local accounts)
 
-Backend identity checks are implemented but **not yet activated**. No real-user study registration or participant ID issuance is enabled.
+Entra ID is not available yet. The API now supports invitation-gated local accounts with PBKDF2-HMAC-SHA256 salted password hashes and signed, 8-hour bearer sessions. **Use synthetic studies and participant data only.** The POC is not approved for production or PHI.
 
-## Configuration required from Azure/University IT
-1. Register or identify a Microsoft Entra ID application for the ResearchPass API in the University of Miami tenant.
-2. Expose a delegated API scope for signed-in users and grant appropriate consent.
-3. Set Azure Function App settings:
-   - `RESEARCHPASS_ENTRA_TENANT_ID`: the University's Entra tenant GUID.
-   - `RESEARCHPASS_ENTRA_API_AUDIENCE`: the exact `aud` value of access tokens issued for the ResearchPass API (usually its application client ID).
-4. The backend verifies RS256 signatures using Microsoft's JWKS, plus issuer, audience, tenant, expiry, and delegated-user claim.
-5. Current Azure Function key protection is retained as an additional gate. Never expose a Function key in browser JavaScript.
+## One-time Azure settings required
 
-## Authorization model
-- Successful registration creates a study and an owner membership, keyed by normalized IRB number and Entra user object ID.
-- An owner can grant issuer access by Entra user object ID.
-- An issuer can check their study access, but cannot grant other users access.
-- Study user records are stored in the `ResearchPassStudyUsers` Azure Table, created on first membership operation.
-- No external IRB staff verification or Velos integration is performed in the POC.
-- The issuance API and login UI are **not implemented**. Study-specific authorization must be checked again by every future issuance operation.
+In `researchpass-api-dev` > Settings > Environment variables > App settings, add:
 
-## Security limitations before production
-- Study registration and owner membership use separate Azure Table writes; an interrupted operation can leave a study without an owner. Add recovery/administrative reconciliation before production.
-- Invitation by Entra object ID is an internal POC mechanism; implement identity lookup, user acceptance, and audit logging before real-world rollout.
-- A function key plus Entra token is required for current backend routes. A server-side proxy or managed API integration is required before browser-based use.
-- Until Entra settings are configured, study endpoints fail closed with HTTP 503.
+- `RESEARCHPASS_SESSION_SECRET`: a randomly generated secret of at least 32 characters (ideally 48+ cryptographically random bytes encoded as hex). Do not commit it to GitHub or share in chat.
+- `RESEARCHPASS_INVITE_CODE`: a separate unpredictable invitation code of at least 20 characters. Share privately only with authorized POC testers.
+- `RESEARCHPASS_STORAGE_CONNECTION`: existing connection string (already configured).
+
+The `ResearchPassUsers` and `ResearchPassStudyUsers` Azure Tables are created automatically on first use. No Entra settings are needed for the temporary mode.
+
+## API endpoints
+
+- `POST /api/account/register` (anonymous function route, but requires private invitation code): `{"email":"tester@example.org","password":"long unique passphrase","invite_code":"..."}`
+- `POST /api/account/login` (anonymous function route): `{"email":"tester@example.org","password":"..."}` -> bearer token
+- `POST /api/studies` (Azure Function key + bearer token): `{"irb_number":"POC-2026-002","study_title":"Synthetic POC"}`
+- `GET /api/studies/{irb_number}/access` (Function key + bearer token)
+- `POST /api/studies/{irb_number}/users` (owner only, Function key + bearer token): `{"user_object_id":"<local user_id UUID returned on registration>"}`
+
+A user who registers a new study is assigned its owner role; owners may grant issuer access to other registered POC accounts.
+
+## Limitations and next steps
+
+- The registration and login routes are internet-reachable. There is no rate limiting, email verification, password reset, or account lockout. Keep the invitation code secret, restrict network access if possible, and do not invite real users yet.
+- Do not put the Azure Function key or bearer tokens in public browser JavaScript. The frontend is intentionally not connected to these endpoints yet. Use Azure Test/Run or trusted server-side tools for controlled tests.
+- An interrupted write between study creation and owner membership can leave an orphaned study; administrative recovery is needed.
+- Email addresses are account identifiers but are not verified.
+- The old Entra-specific `auth.py` remains available for later migration but is not active.
+- Replace local authentication with institutional identity, audit logging, secure session management, invitation acceptance, and security review before any real-world deployment.
