@@ -58,6 +58,15 @@ def generate_save_url(settings, participant_name, start_date="", end_date=""):
             {"header": "Study protocol", "body": irb_number},
         ],
     }
+    color = str(settings.get("card_background") or "#005030")
+    if re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+        generic_object["hexBackgroundColor"] = color
+    base_url = os.getenv("RESEARCHPASS_PUBLIC_API_BASE", "https://researchpass-api-dev-czc2e6b8d8fyg0c6.eastus2-01.azurewebsites.net").rstrip("/")
+    assets = settings.get("branding_assets") or {}
+    if assets.get("logo"):
+        generic_object["logo"] = {"sourceUri": {"uri": base_url + "/api/wallet-branding/logo"}}
+    if assets.get("hero"):
+        generic_object["heroImage"] = {"sourceUri": {"uri": base_url + "/api/wallet-branding/hero"}}
     if start_date:
         generic_object["textModulesData"].append({"header": "Study start", "body": start_date})
     if end_date:
@@ -77,6 +86,6 @@ def generate_save_url(settings, participant_name, start_date="", end_date=""):
     }
     token = jwt.encode(claims, account["private_key"], algorithm="RS256")
     url = "https://pay.google.com/gp/v/save/" + token
-    if len(url) > 1800:
+    if len(url) > 8000:
         raise ValueError("The generated Google Wallet link is too long. Shorten the study or participant display text and try again.")
     return url
