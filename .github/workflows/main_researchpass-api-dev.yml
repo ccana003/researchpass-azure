@@ -73,7 +73,7 @@ jobs:
         with:
           app-name: 'researchpass-api-dev'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: '.'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_726F92243C4C46B88F37FB2F0184FA27 }}
           sku: 'flexconsumption'
         
