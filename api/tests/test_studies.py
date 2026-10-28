@@ -42,26 +42,44 @@ class StudyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             studies.create_study("IRB2026001", " ", "test-user")
 
+    @patch("function_app.current_user", return_value=("test-user", None))
+    @patch("function_app.grant_owner")
     @patch("function_app.create_study")
-    def test_registration_success(self, create):
+    def test_registration_success(self, create, owner, identity):
         import azure.functions as func
         create.return_value = {"irb_number": "IRB-2026-001", "study_title": "Synthetic", "study_status": "registered"}
         request = func.HttpRequest(method="POST", url="http://localhost/api/studies", body=json.dumps({"irb_number": "IRB-2026-001", "study_title": "Synthetic"}).encode())
         result = function_app.register_study(request)
         self.assertEqual(result.status_code, 201)
+        owner.assert_called_once_with("IRB-2026-001", "test-user")
         self.assertEqual(json.loads(result.get_body())["study_status"], "registered")
 
-    def test_registration_invalid_json(self):
+    @patch("function_app.current_user", return_value=("test-user", None))
+    def test_registration_invalid_json(self, identity):
         import azure.functions as func
         request = func.HttpRequest(method="POST", url="http://localhost/api/studies", body=b"{broken")
         self.assertEqual(function_app.register_study(request).status_code, 400)
 
+    @patch("function_app.current_user", return_value=("test-user", None))
     @patch("function_app.create_study", side_effect=studies.DuplicateStudyError("duplicate"))
-    def test_registration_duplicate(self, create):
+    def test_registration_duplicate(self, create, identity):
         import azure.functions as func
         request = func.HttpRequest(method="POST", url="http://localhost/api/studies", body=b'{"irb_number":"IRB2026001","study_title":"Synthetic"}')
         self.assertEqual(function_app.register_study(request).status_code, 409)
 
+    def test_registration_requires_identity_configuration(self):
+        import azure.functions as func
+        request = func.HttpRequest(method="POST", url="http://localhost/api/studies", body=b'{}')
+        with patch.dict(os.environ, {}, clear=True):
+            result = function_app.register_study(request)
+        self.assertEqual(result.status_code, 503)
+
+    @patch("function_app.current_user", return_value=("issuer-user", None))
+    @patch("function_app.role_for", return_value="issuer")
+    def test_issuer_cannot_grant_access(self, role, identity):
+        import azure.functions as func
+        request = func.HttpRequest(method="POST", url="http://localhost/api/studies/IRB2026001/users", body=b'{}', route_params={"irb_number":"IRB2026001"})
+        self.assertEqual(function_app.add_study_user(request).status_code, 403)
 
 
 if __name__ == "__main__":
