@@ -4,7 +4,7 @@ import re
 import azure.functions as func
 from studies import create_study, DuplicateStudyError, normalize_irb
 from local_auth import authenticate, register, login, LocalAuthError, LocalAuthNotConfigured
-from memberships import grant_owner, grant_issuer, role_for
+from memberships import grant_owner, grant_issuer, role_for, studies_for_user
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -118,3 +118,15 @@ def add_study_user(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Study user grant failed")
         return response({"error": "Unable to grant access"}, 500)
+
+
+@app.route(route="my-studies", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def my_studies(req: func.HttpRequest) -> func.HttpResponse:
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        return response({"studies": studies_for_user(user_id)}, 200)
+    except Exception:
+        logging.exception("Unable to list user studies")
+        return response({"error": "Unable to load your studies"}, 500)
