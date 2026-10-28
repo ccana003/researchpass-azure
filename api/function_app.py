@@ -130,3 +130,26 @@ def my_studies(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to list user studies")
         return response({"error": "Unable to load your studies"}, 500)
+
+
+@app.route(route="studies/{irb_number}/settings", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
+def study_settings(req: func.HttpRequest) -> func.HttpResponse:
+    from study_settings import get_settings, save_settings
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    irb = req.route_params["irb_number"]
+    try:
+        role = role_for(irb, user_id)
+        if not role:
+            return response({"error": "Access denied"}, 403)
+        if req.method == "PUT":
+            if role != "owner":
+                return response({"error": "Only study owners can edit settings"}, 403)
+            return response(save_settings(irb, req.get_json()), 200)
+        return response(get_settings(irb), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Study settings operation failed")
+        return response({"error": "Unable to load or save study settings"}, 500)
