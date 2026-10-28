@@ -207,6 +207,7 @@ def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
         return response({"error": "Unable to prepare preview"}, 500)
 
 
+@app.route(route="system-admin/me", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="admin/me", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_me(req: func.HttpRequest) -> func.HttpResponse:
     from system_admin import is_admin
@@ -215,6 +216,7 @@ def admin_me(req: func.HttpRequest) -> func.HttpResponse:
         return error
     return response({"system_admin": is_admin(user_id)}, 200)
 
+@app.route(route="system-admin/wallet-settings", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="admin/wallet-settings", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_wallet_settings(req: func.HttpRequest) -> func.HttpResponse:
     from system_admin import is_admin, read_settings, write_settings
