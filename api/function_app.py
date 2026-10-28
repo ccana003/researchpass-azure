@@ -153,3 +153,55 @@ def study_settings(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Study settings operation failed")
         return response({"error": "Unable to load or save study settings"}, 500)
+
+
+@app.route(route="studies/{irb_number}/pass-preview", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
+    """Synthetic-only preview; does not issue, sign, or store a wallet pass."""
+    from datetime import date
+    from study_settings import get_settings
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        irb = req.route_params["irb_number"]
+        if role_for(irb, user_id) not in ("owner", "issuer"):
+            return response({"error": "Access denied"}, 403)
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        name = payload.get("participant_name")
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
+            return response({"error": "Synthetic participant name is required (1-100 characters)"}, 400)
+        settings = get_settings(irb)
+        dates = {}
+        for field, required in (("start_date", "require_start_date"), ("end_date", "require_end_date")):
+            value = payload.get(field) or ""
+            if not isinstance(value, str):
+                return response({"error": field + " must be a date"}, 400)
+            if settings[required] and not value:
+                return response({"error": field + " is required by this study"}, 400)
+            if value:
+                try:
+                    dates[field] = date.fromisoformat(value)
+                except ValueError:
+                    return response({"error": field + " must use YYYY-MM-DD"}, 400)
+        if dates.get("start_date") and dates.get("end_date") and dates["end_date"] < dates["start_date"]:
+            return response({"error": "End date cannot precede start date"}, 400)
+        return response({
+            "preview_only": True,
+            "message": "Synthetic preview only; no wallet pass was generated or saved",
+            "participant_name": name.strip(),
+            "irb_number": settings["irb_number"],
+            "study_name": settings["display_name"],
+            "pi_name": settings["pi_name"],
+            "contact_email": settings["contact_email"],
+            "contact_phone": settings["contact_phone"],
+            "start_date": dates["start_date"].isoformat() if "start_date" in dates else None,
+            "end_date": dates["end_date"].isoformat() if "end_date" in dates else None,
+        }, 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Pass preview failed")
+        return response({"error": "Unable to prepare preview"}, 500)
