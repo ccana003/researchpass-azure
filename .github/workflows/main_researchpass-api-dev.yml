@@ -35,14 +35,14 @@ jobs:
           source venv/bin/activate
 
       - name: Install dependencies
-        run: pip install -r api/requirements.txt
+        run: |\n          python -m pip install --upgrade pip\n          python -m pip install -r api/requirements.txt --target api/.python_packages/lib/site-packages\n          python -m pip install -r api/requirements.txt\n\n      - name: Verify packaged Python dependencies\n        run: |\n          test -d api/.python_packages/lib/site-packages/azure/data/tables\n          test -d api/.python_packages/lib/site-packages/azure/core\n          python -m unittest discover -s api/tests -v
 
       # Optional: Add step to run tests here
 
       - name: Zip artifact for deployment
         run: |
           cd api
-          zip -r ../release.zip . -x "*.pyc" "__pycache__/*"
+          zip -r ../release.zip . -x "*.pyc" "*/__pycache__/*"\n          unzip -l ../release.zip | grep '.python_packages/lib/site-packages/azure/data/tables'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
