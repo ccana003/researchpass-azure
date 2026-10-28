@@ -296,3 +296,37 @@ def admin_wallet_settings(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("System administration settings failed")
         return response({"error": "Unable to manage system settings"}, 500)
+
+@app.route(route="wallet-branding/{asset}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def wallet_branding_asset(req: func.HttpRequest) -> func.HttpResponse:
+    """Public, non-sensitive institutional image assets for Google Wallet rendering."""
+    from branding_assets import get_asset
+    try:
+        content = get_asset(req.route_params["asset"])
+        if content is None:
+            return func.HttpResponse(status_code=404)
+        return func.HttpResponse(body=content, status_code=200, mimetype="image/png", headers={"Cache-Control": "public, max-age=300", "X-Content-Type-Options": "nosniff"})
+    except ValueError:
+        return func.HttpResponse(status_code=404)
+    except Exception:
+        logging.exception("Unable to serve branding image")
+        return func.HttpResponse(status_code=500)
+
+
+@app.route(route="system-admin/branding/{asset}", methods=["PUT"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_branding_upload(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    from branding_assets import save_asset
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        save_asset(req.route_params["asset"], req.get_json())
+        return response({"saved": True, "asset": req.route_params["asset"]}, 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Unable to save branding image")
+        return response({"error": "Unable to save branding image"}, 500)
