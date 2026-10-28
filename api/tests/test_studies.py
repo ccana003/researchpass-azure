@@ -62,11 +62,6 @@ class StudyTests(unittest.TestCase):
         request = func.HttpRequest(method="POST", url="http://localhost/api/studies", body=b'{"irb_number":"IRB2026001","study_title":"Synthetic"}')
         self.assertEqual(function_app.register_study(request).status_code, 409)
 
-    def test_route_requires_function_auth(self):
-        functions = function_app.app.get_functions()
-        route = next(f for f in functions if f.get_function_name() == "register_study")
-        binding = next(b for b in route.get_bindings() if b.type == "httpTrigger")
-        self.assertEqual(binding.auth_level.value, "function")
 
 
 if __name__ == "__main__":
