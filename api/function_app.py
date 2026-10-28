@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+from datetime import date
 import azure.functions as func
 from studies import create_study, DuplicateStudyError, normalize_irb
 from local_auth import authenticate, register, login, LocalAuthError, LocalAuthNotConfigured
@@ -8,8 +9,10 @@ from memberships import grant_owner, grant_issuer, role_for, studies_for_user
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
+
 def response(payload, status):
     return func.HttpResponse(json.dumps(payload), status_code=status, mimetype="application/json")
+
 
 def current_user(req):
     try:
@@ -19,9 +22,11 @@ def current_user(req):
     except LocalAuthError as exc:
         return None, response({"error": str(exc)}, 401)
 
+
 @app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def health(req: func.HttpRequest) -> func.HttpResponse:
     return response({"status": "ok", "application": "ResearchPass", "environment": "development", "service": "api"}, 200)
+
 
 @app.route(route="account/register", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def register_account(req: func.HttpRequest) -> func.HttpResponse:
@@ -41,6 +46,7 @@ def register_account(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("POC account registration failed")
         return response({"error": "Unable to register account"}, 500)
 
+
 @app.route(route="account/login", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def login_account(req: func.HttpRequest) -> func.HttpResponse:
     try:
@@ -58,9 +64,9 @@ def login_account(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("POC login failed")
         return response({"error": "Unable to sign in"}, 500)
 
+
 @app.route(route="studies", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def register_study(req: func.HttpRequest) -> func.HttpResponse:
-    # POC-only: signed user session required; no browser-exposed Function key.
     user_id, error = current_user(req)
     if error is not None:
         return error
@@ -82,6 +88,7 @@ def register_study(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("Study registration or owner assignment failed")
         return response({"error": "Unable to complete study registration; administrator review may be required"}, 500)
 
+
 @app.route(route="studies/{irb_number}/access", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def study_access(req: func.HttpRequest) -> func.HttpResponse:
     user_id, error = current_user(req)
@@ -97,6 +104,7 @@ def study_access(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Study access lookup failed")
         return response({"error": "Unable to check access"}, 500)
+
 
 @app.route(route="studies/{irb_number}/users", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def add_study_user(req: func.HttpRequest) -> func.HttpResponse:
@@ -158,8 +166,6 @@ def study_settings(req: func.HttpRequest) -> func.HttpResponse:
 @app.route(route="studies/{irb_number}/pass-preview", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
     """Synthetic-only preview; does not issue, sign, or store a wallet pass."""
-    from datetime import date
-    from study_settings import get_settings
     user_id, error = current_user(req)
     if error is not None:
         return error
@@ -173,6 +179,7 @@ def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
         name = payload.get("participant_name")
         if not isinstance(name, str) or not 1 <= len(name.strip()) <= 100:
             return response({"error": "Synthetic participant name is required (1-100 characters)"}, 400)
+        from study_settings import get_settings
         settings = get_settings(irb)
         dates = {}
         for field, required in (("start_date", "require_start_date"), ("end_date", "require_end_date")):
@@ -207,6 +214,62 @@ def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
         return response({"error": "Unable to prepare preview"}, 500)
 
 
+@app.route(route="studies/{irb_number}/google-wallet-link", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
+    """Create a signed Google Wallet save link for synthetic POC data only."""
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        irb = req.route_params["irb_number"]
+        if role_for(irb, user_id) not in ("owner", "issuer"):
+            return response({"error": "Access denied"}, 403)
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        from study_settings import get_settings
+        from system_admin import read_settings
+        from google_wallet import generate_save_url
+        settings = get_settings(irb)
+        system_settings = read_settings()
+        wallet_settings = {
+            **system_settings,
+            **settings,
+            "platform_label": system_settings.get("platform_label", "Miami CTSI"),
+        }
+        name = payload.get("participant_name")
+        start_date = payload.get("start_date") or ""
+        end_date = payload.get("end_date") or ""
+        if not isinstance(start_date, str) or not isinstance(end_date, str):
+            return response({"error": "Dates must use YYYY-MM-DD"}, 400)
+        for field, value, required in (
+            ("start_date", start_date, settings.get("require_start_date", False)),
+            ("end_date", end_date, settings.get("require_end_date", False)),
+        ):
+            if required and not value:
+                return response({"error": field + " is required by this study"}, 400)
+            if value:
+                try:
+                    date.fromisoformat(value)
+                except ValueError:
+                    return response({"error": field + " must use YYYY-MM-DD"}, 400)
+        if start_date and end_date and end_date < start_date:
+            return response({"error": "End date cannot precede start date"}, 400)
+        save_url = generate_save_url(wallet_settings, name, start_date, end_date)
+        return response({
+            "save_url": save_url,
+            "message": "Google Wallet save link generated. The pass is created when the user saves it to Google Wallet.",
+            "test_only": True,
+        }, 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except RuntimeError as exc:
+        return response({"error": str(exc)}, 503)
+    except Exception:
+        logging.exception("Google Wallet link generation failed")
+        return response({"error": "Unable to generate Google Wallet save link"}, 500)
+
+
 @app.route(route="system-admin/me", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_me(req: func.HttpRequest) -> func.HttpResponse:
     from system_admin import is_admin
@@ -214,6 +277,7 @@ def admin_me(req: func.HttpRequest) -> func.HttpResponse:
     if error is not None:
         return error
     return response({"system_admin": is_admin(user_id)}, 200)
+
 
 @app.route(route="system-admin/wallet-settings", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_wallet_settings(req: func.HttpRequest) -> func.HttpResponse:
