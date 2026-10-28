@@ -3,7 +3,7 @@ import logging
 import re
 import azure.functions as func
 from studies import create_study, DuplicateStudyError, normalize_irb
-from auth import authenticate, AuthenticationError, AuthenticationNotConfigured
+from local_auth import authenticate, register, login, LocalAuthError, LocalAuthNotConfigured
 from memberships import grant_owner, grant_issuer, role_for
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
@@ -14,18 +14,53 @@ def response(payload, status):
 def current_user(req):
     try:
         return authenticate(req), None
-    except AuthenticationNotConfigured:
-        return None, response({"error": "Microsoft Entra authentication must be configured before using study endpoints"}, 503)
-    except AuthenticationError as exc:
+    except LocalAuthNotConfigured:
+        return None, response({"error": "POC authentication settings are not configured"}, 503)
+    except LocalAuthError as exc:
         return None, response({"error": str(exc)}, 401)
 
 @app.route(route="health", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def health(req: func.HttpRequest) -> func.HttpResponse:
     return response({"status": "ok", "application": "ResearchPass", "environment": "development", "service": "api"}, 200)
 
+@app.route(route="account/register", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def register_account(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        result = register(payload.get("email"), payload.get("password"), payload.get("invite_code"))
+        return response(result, 201)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except LocalAuthError as exc:
+        return response({"error": str(exc)}, 403)
+    except LocalAuthNotConfigured:
+        return response({"error": "POC authentication settings are not configured"}, 503)
+    except Exception:
+        logging.exception("POC account registration failed")
+        return response({"error": "Unable to register account"}, 500)
+
+@app.route(route="account/login", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def login_account(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        return response(login(payload.get("email"), payload.get("password")), 200)
+    except ValueError:
+        return response({"error": "Invalid email or password"}, 401)
+    except LocalAuthError as exc:
+        return response({"error": str(exc)}, 401)
+    except LocalAuthNotConfigured:
+        return response({"error": "POC authentication settings are not configured"}, 503)
+    except Exception:
+        logging.exception("POC login failed")
+        return response({"error": "Unable to sign in"}, 500)
+
 @app.route(route="studies", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
 def register_study(req: func.HttpRequest) -> func.HttpResponse:
-    # Both an Azure Function key and a validated Entra delegated user token are required.
+    # POC access requires a signed session and a Function key.
     user_id, error = current_user(req)
     if error is not None:
         return error
