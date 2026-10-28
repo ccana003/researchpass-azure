@@ -6,7 +6,7 @@ from studies import create_study, DuplicateStudyError, normalize_irb
 from local_auth import authenticate, register, login, LocalAuthError, LocalAuthNotConfigured
 from memberships import grant_owner, grant_issuer, role_for
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
+app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
 def response(payload, status):
     return func.HttpResponse(json.dumps(payload), status_code=status, mimetype="application/json")
@@ -58,9 +58,9 @@ def login_account(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("POC login failed")
         return response({"error": "Unable to sign in"}, 500)
 
-@app.route(route="studies", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="studies", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def register_study(req: func.HttpRequest) -> func.HttpResponse:
-    # POC access requires a signed session and a Function key.
+    # POC-only: signed user session required; no browser-exposed Function key.
     user_id, error = current_user(req)
     if error is not None:
         return error
@@ -82,7 +82,7 @@ def register_study(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("Study registration or owner assignment failed")
         return response({"error": "Unable to complete study registration; administrator review may be required"}, 500)
 
-@app.route(route="studies/{irb_number}/access", methods=["GET"], auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="studies/{irb_number}/access", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def study_access(req: func.HttpRequest) -> func.HttpResponse:
     user_id, error = current_user(req)
     if error is not None:
@@ -98,7 +98,7 @@ def study_access(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("Study access lookup failed")
         return response({"error": "Unable to check access"}, 500)
 
-@app.route(route="studies/{irb_number}/users", methods=["POST"], auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="studies/{irb_number}/users", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
 def add_study_user(req: func.HttpRequest) -> func.HttpResponse:
     user_id, error = current_user(req)
     if error is not None:
@@ -110,7 +110,7 @@ def add_study_user(req: func.HttpRequest) -> func.HttpResponse:
         payload = req.get_json()
         target = payload.get("user_object_id") if isinstance(payload, dict) else None
         if not isinstance(target, str) or not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F-]{27,40}", target):
-            return response({"error": "A valid Entra user object ID is required"}, 400)
+            return response({"error": "A valid ResearchPass user ID is required"}, 400)
         grant_issuer(irb_number, target.lower())
         return response({"irb_number": normalize_irb(irb_number), "user_object_id": target.lower(), "role": "issuer"}, 201)
     except ValueError as exc:
