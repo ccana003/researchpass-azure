@@ -49,6 +49,8 @@ def read_settings():
         "apple_team_id": row.get("apple_team_id", ""),
         "apple_pass_type_id": row.get("apple_pass_type_id", ""),
         "platform_label": row.get("platform_label", "Miami CTSI"),
+        "card_background": row.get("card_background", "#005030"),
+        "branding_assets": {name: bool(row.get("asset_" + name)) for name in ("hero", "logo")},
         "google_credentials_configured": google_credentials_configured,
         "apple_certificate_configured": bool(os.getenv("RESEARCHPASS_APPLE_CERTIFICATE_REF")),
         "wallet_generation_enabled": bool(google_credentials_configured and google_issuer_id and google_class_id),
@@ -58,12 +60,14 @@ def read_settings():
 def write_settings(payload):
     if not isinstance(payload, dict):
         raise ValueError("JSON object required")
-    allowed = ("google_issuer_id", "google_class_id", "apple_team_id", "apple_pass_type_id", "platform_label")
+    allowed = ("google_issuer_id", "google_class_id", "apple_team_id", "apple_pass_type_id", "platform_label", "card_background")
     row = {"PartitionKey": "SYSTEM", "RowKey": "WALLET"}
     for key in allowed:
         value = payload.get(key, "")
         if not isinstance(value, str) or len(value.strip()) > 160 or any(ord(c) < 32 for c in value):
             raise ValueError(key + " must be text up to 160 characters")
+        if key == "card_background" and not __import__("re").fullmatch(r"#[0-9A-Fa-f]{6}", value):
+            raise ValueError("card_background must be a six-digit hex color")
         row[key] = value.strip()
     settings_table().upsert_entity(row, mode="merge")
     return read_settings()
