@@ -205,3 +205,30 @@ def pass_preview(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Pass preview failed")
         return response({"error": "Unable to prepare preview"}, 500)
+
+
+@app.route(route="admin/me", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_me(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    return response({"system_admin": is_admin(user_id)}, 200)
+
+@app.route(route="admin/wallet-settings", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_wallet_settings(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin, read_settings, write_settings
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        if req.method == "PUT":
+            return response(write_settings(req.get_json()), 200)
+        return response(read_settings(), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("System administration settings failed")
+        return response({"error": "Unable to manage system settings"}, 500)
