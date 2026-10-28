@@ -4,11 +4,58 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ResearchPass | Miami CTSI</title>
 <style>
-:root{font-family:Arial,Helvetica,sans-serif;color:#24352c;background:#f3f6f4}*{box-sizing:border-box}body{margin:0}header{background:#005030;color:white;padding:23px max(24px,calc((100vw - 1040px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}header h1{font-size:27px;margin:0}header p{margin:5px 0 0;color:#dcebe2;font-size:13px}.brand{font-size:13px;font-weight:bold;text-align:right}.accent{height:5px;background:#f47321}main{max-width:1040px;margin:38px auto;padding:0 20px 60px}.intro h2{font-size:27px;margin:0 0 8px}.intro p{color:#55675c;margin:0 0 26px}.panel{background:white;border:1px solid #dbe4df;border-radius:14px;padding:28px;box-shadow:0 8px 26px #163a2410;margin-bottom:20px}h3{margin:0 0 18px;color:#005030}label{display:block;font-weight:600;font-size:13px;margin:0 0 7px}input{display:block;width:100%;border:1px solid #b8c9be;border-radius:7px;padding:12px;font:inherit;margin-bottom:18px;background:white}input:focus{outline:2px solid #e8a15b;outline-offset:1px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}button{border:0;border-radius:7px;background:#005030;color:white;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}button.secondary{background:#eef3ef;color:#005030}button:disabled{opacity:.6;cursor:wait}.small{font-size:13px;color:#627268}.message{padding:12px 14px;border-radius:7px;background:#edf5ef;color:#005030;margin:0 0 18px}.message.error{background:#fff0e9;color:#8c310c}.hidden{display:none!important}.eyebrow{font-size:12px;color:#6b7a70;text-transform:uppercase;letter-spacing:1px;font-weight:700}.study{border:1px solid #dce7df;border-radius:10px;padding:18px;margin:12px 0}.study strong{display:block;margin-bottom:7px}.study span{font-size:13px;color:#647468}.footer{font-size:12px;color:#67766e;text-align:center;padding:10px 20px 28px}@media(max-width:680px){header{padding:20px}.grid{grid-template-columns:1fr}.panel{padding:20px}.brand{font-size:11px}}
+:root{font-family:Inter,"Segoe UI",Arial,Helvetica,sans-serif;color:#17231d;background:#f7f4ed;font-synthesis:none;text-rendering:optimizeLegibility}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 85% 10%,rgba(244,115,33,.07),transparent 32%),#f7f4ed;min-height:100vh}
+header{background:#f7f4ed;color:#005030;padding:22px max(24px,calc((100vw - 1120px)/2));display:flex;align-items:center;justify-content:space-between;gap:24px;border-top:5px solid #f47321}
+.brandLockup{display:flex;align-items:center;gap:18px;min-width:0}
+.ctsiMark{font-size:37px;line-height:.9;letter-spacing:-2px;font-weight:900;color:#005030;position:relative;padding-right:3px}
+.ctsiMark:before{content:"";position:absolute;left:0;top:0;width:56%;height:7px;background:#f47321}
+.brandDivider{height:44px;width:1px;background:#cbd6ce;flex:none}
+.productBrand strong{display:block;font-size:25px;letter-spacing:-1px;color:#005030;white-space:nowrap}
+.productBrand strong span{color:#f47321}
+.productBrand p{margin:4px 0 0;font-size:12px;color:#59675f}
+.brand{font-size:12px;font-weight:700;text-align:right;line-height:1.5;color:#005030;letter-spacing:.02em}
+.accent{height:3px;background:#f47321}
+main{max-width:1120px;margin:34px auto;padding:0 24px 64px}
+.intro{position:relative;padding:24px 0 22px}
+.intro h2{font-size:clamp(30px,4vw,43px);line-height:1.08;letter-spacing:-1.5px;margin:12px 0 12px;color:#17231d;font-weight:800}
+.intro p{max-width:760px;color:#59675f;font-size:16px;line-height:1.65;margin:0 0 20px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;color:#005030;text-transform:uppercase;letter-spacing:2px;font-weight:800}
+.eyebrow:before{content:"";width:7px;height:7px;border-radius:50%;background:#f47321;display:inline-block}
+.panel{background:rgba(255,255,255,.92);border:1px solid #dce4dc;border-radius:18px;padding:28px;box-shadow:0 12px 32px rgba(23,55,36,.055);margin-bottom:20px}
+h3{margin:0 0 18px;color:#005030;font-size:20px;letter-spacing:-.35px}
+label{display:block;font-weight:650;font-size:13px;margin:0 0 8px;color:#26372d}
+input{display:block;width:100%;border:1px solid #cbd7ce;border-radius:10px;padding:13px 14px;font:inherit;margin-bottom:18px;background:#fff;color:#17231d;transition:border-color .15s,box-shadow .15s}
+input:focus{outline:none;border-color:#005030;box-shadow:0 0 0 3px rgba(0,80,48,.12)}
+input[type=checkbox]{accent-color:#005030}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{border:1px solid #005030;border-radius:10px;background:#005030;color:white;padding:12px 19px;font:inherit;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+button:hover:not(:disabled){background:#003d25;box-shadow:0 5px 14px rgba(0,80,48,.15);transform:translateY(-1px)}
+button.secondary{background:#edf3ed;border-color:#edf3ed;color:#005030}
+button.secondary:hover:not(:disabled){background:#e0ebe1}
+button:focus-visible,a:focus-visible{outline:3px solid #f47321;outline-offset:3px}
+button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
+.small{font-size:13px;line-height:1.55;color:#59675f}
+.message{padding:14px 16px;border-radius:12px;background:#eaf3eb;color:#005030;border:1px solid #d3e5d6;margin:0 0 18px;line-height:1.5}
+.message.error{background:#fff0e9;color:#8c310c;border-color:#f5d1bd}
+.hidden{display:none!important}
+.study{border:1px solid #dce4dc;border-radius:13px;padding:19px;background:#fff;margin:12px 0}
+.study strong{display:block;margin-bottom:7px;color:#17231d}
+.study span{font-size:13px;color:#59675f}
+.study a{color:#005030;font-weight:700;text-decoration-thickness:1px;text-underline-offset:3px}
+.study a:hover{color:#b84e0c}
+#adminPanel{border-top:3px solid #f47321}
+#issuancePanel{border-top:3px solid #f47321}
+#settingsPanel{border-top:3px solid #f47321}
+.footer{font-size:12px;color:#59675f;text-align:center;padding:20px 24px 30px;border-top:1px solid #e1e5dd;line-height:1.7}
+@media(max-width:680px){header{padding:18px 20px;align-items:flex-start;flex-direction:column;gap:14px}.brandLockup{gap:12px}.ctsiMark{font-size:32px}.brandDivider{height:38px}.productBrand strong{font-size:22px}.brand{text-align:left;font-size:11px}main{margin:18px auto;padding:0 16px 40px}.grid{grid-template-columns:1fr;gap:0}.panel{padding:20px;border-radius:15px}.intro{padding:20px 0 16px}.intro h2{letter-spacing:-1px}.actions button{flex:0 0 auto}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
 <body>
-<header><div><h1>ResearchPass</h1><p>Digital research participant identification</p></div><div class="brand">University of Miami<br>Clinical and Translational Science Institute</div></header><div class="accent"></div>
+<header><div class="brandLockup"><div class="ctsiMark" aria-label="Miami CTSI">CTSI</div><div class="brandDivider" aria-hidden="true"></div><div class="productBrand"><strong>Research<span>Pass</span></strong><p>Digital study IDs for research participants</p></div></div><div class="brand">UNIVERSITY OF MIAMI<br>CLINICAL AND TRANSLATIONAL SCIENCE INSTITUTE</div></header><div class="accent"></div>
 <main>
 <div class="intro"><div class="eyebrow">Standalone research platform · Proof of concept</div><h2 id="welcome">Study team portal</h2><p>Manage your study registration and authorized personnel. Synthetic data only during development.</p></div>
 <div id="message" class="message hidden" role="status" aria-live="polite"></div>
@@ -29,7 +76,7 @@
 <section class="panel hidden" id="ownerPanel"><h3>Authorize a study team member</h3><p class="small">Study owners can grant issuer access to another registered ResearchPass POC account.</p><form id="userForm" class="grid"><div><label for="userIrb">IRB protocol number</label><input id="userIrb" required placeholder="POC-2026-002"></div><div><label for="userId">ResearchPass user ID (UUID)</label><input id="userId" required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div><div><button type="submit">Grant issuer access</button></div></form><p class="small">The user ID is provided when a new account is created. Only owners can grant access.</p></section>
 </section>
 </main>
-<div class="footer">University of Miami · Miami CTSI · ResearchPass POC · Do not enter real participant information</div>
+<div class="footer"><strong style="color:#005030">ResearchPass</strong> · Miami CTSI · University of Miami<br>Private proof of concept · Do not enter real participant information</div>
 <script>
 "use strict";
 const API="https://researchpass-api-dev-czc2e6b8d8fyg0c6.eastus2-01.azurewebsites.net/api";
