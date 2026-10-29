@@ -538,3 +538,24 @@ def study_ibis_information(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to retrieve IBIS study information")
         return response({"error": "Unable to load IBIS study information"}, 500)
+
+
+@app.route(route="system-admin/study-count", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_study_count(req: func.HttpRequest) -> func.HttpResponse:
+    """Count registered studies, independently of pass activity or membership."""
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        import os
+        from azure.data.tables import TableServiceClient
+        connection = os.environ["RESEARCHPASS_STORAGE_CONNECTION"]
+        table = TableServiceClient.from_connection_string(connection).get_table_client("ResearchPassStudies")
+        count = sum(1 for _ in table.query_entities(query_filter="PartitionKey eq 'STUDY'", select=["RowKey"]))
+        return response({"registered_studies": count}, 200)
+    except Exception:
+        logging.exception("Unable to count registered studies")
+        return response({"error": "Unable to count registered studies"}, 500)
