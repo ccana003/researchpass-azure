@@ -348,7 +348,7 @@ def admin_pass_registry(req: func.HttpRequest) -> func.HttpResponse:
         emails = {u.get("user_id"): u["RowKey"] for u in users_table().list_entities()}
         events = list_events()
         for event in events:
-            event["issued_by"] = emails.get(event["issuer_id"], "Unknown account")
+            event["issued_by"] = emails.get(event["issuer_id"], ("Synthetic demonstration issuer" if event.get("demo") else "Unknown account"))
         return response({"events": events, "note": "Generated links only; Google Wallet save cannot currently be confirmed."}, 200)
     except Exception:
         logging.exception("Unable to load pass registry")
@@ -390,3 +390,27 @@ def admin_update_study_access(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to update study access")
         return response({"error": "Unable to update study access"}, 500)
+
+
+@app.route(route="system-admin/demo-data", methods=["POST", "DELETE"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_demo_data(req: func.HttpRequest) -> func.HttpResponse:
+    """Populate or remove only tagged, synthetic POC records."""
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    if __import__("os").environ.get("RESEARCHPASS_DISABLE_DEMO_DATA") == "1":
+        return response({"error": "Demo data operations are disabled"}, 403)
+    try:
+        from demo_data import load_demo, clear_demo
+        if req.method == "POST":
+            return response({"loaded": load_demo()}, 200)
+        payload = req.get_json()
+        if not isinstance(payload, dict) or payload.get("confirm") != "CLEAR DEMO DATA":
+            return response({"error": "Explicit confirmation required"}, 400)
+        return response({"cleared": clear_demo()}, 200)
+    except Exception:
+        logging.exception("Demonstration data operation failed")
+        return response({"error": "Unable to manage demonstration data"}, 500)
