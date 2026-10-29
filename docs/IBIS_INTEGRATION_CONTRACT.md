@@ -23,8 +23,8 @@ ResearchPass exposes a receiving endpoint for IT to connect to the institution's
   "contact_email": "research@example.edu",
   "contact_phone": "305-555-0100",
   "study_team": [
-    {"name": "Example Coordinator", "email": "coordinator@example.edu", "role": "Coordinator"},
-    {"name": "Example Investigator", "email": "pi@example.edu", "role": "Principal Investigator"}
+    {"name": "Example Coordinator", "email": "coordinator@example.edu", "role": "Coordinator", "external_person_id": "", "external_id_type": ""},
+    {"name": "Example Investigator", "email": "pi@example.edu", "role": "Principal Investigator", "external_person_id": "C123456", "external_id_type": "C-number"}
   ]
 }
 ```
@@ -38,7 +38,7 @@ ResearchPass exposes a receiving endpoint for IT to connect to the institution's
 - `protocol_number` → study lookup key (case-insensitive, punctuation-normalized)
 - `study_title` → canonical study title; `principal_investigator` → `pi_name`
 - `contact_email` and `contact_phone` → study contact details
-- `study_team` → separate IBIS roster, **not** ResearchPass user permissions
+- `study_team` → separate IBIS roster, **not** ResearchPass user permissions. Each member includes name, email, role, optional `external_person_id` (institutional unique person identifier), and optional `external_id_type` (e.g. C-number or employee ID). Person identifiers are not study-specific and may be blank until IBIS mapping is confirmed.
 - Sync timestamp is recorded. Existing display-name overrides are retained.
 - This version does not implement scheduled polling, webhook verification, incremental synchronization, automated account provisioning, or changes to study authorization.
 - Study team names and emails may be personal data: restrict connector access, confirm retention rules, and use approved institutional privacy/security controls before sending real records.
