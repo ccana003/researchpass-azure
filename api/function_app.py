@@ -452,3 +452,49 @@ def apple_wallet_pass(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Apple Wallet pass generation failed")
         return response({"error": "Unable to generate Apple Wallet pass. Verify Apple certificate configuration."}, 500)
+
+
+@app.route(route="studies/{irb_number}/wallet-qr-codes", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def wallet_qr_codes(req: func.HttpRequest) -> func.HttpResponse:
+    """Generate Apple and Google one-time QR handoffs for a synthetic participant."""
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        irb = req.route_params["irb_number"]
+        if role_for(irb, user_id) not in ("owner", "issuer"):
+            return response({"error": "Access denied"}, 403)
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        from study_settings import get_settings
+        from system_admin import read_settings
+        from wallet_handoff import create
+        return response(create(normalize_irb(irb), user_id, get_settings(irb), read_settings(), payload), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except RuntimeError as exc:
+        return response({"error": str(exc)}, 503)
+    except Exception:
+        logging.exception("Wallet QR handoff generation failed")
+        return response({"error": "Unable to generate wallet QR codes"}, 500)
+
+
+@app.route(route="wallet-handoff/{handoff_token}", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def wallet_handoff_open(req: func.HttpRequest) -> func.HttpResponse:
+    """Single-use public landing endpoint: QR contains no participant information."""
+    try:
+        from wallet_handoff import open_handoff
+        result = open_handoff(req.route_params.get("handoff_token", ""))
+        if not result:
+            return func.HttpResponse("This wallet link is expired, invalid, or already used. Ask your research coordinator for a new QR code.", status_code=410, mimetype="text/plain")
+        platform, data = result
+        if platform == "google":
+            return func.HttpResponse(status_code=302, headers={"Location": data.decode(), "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
+        return func.HttpResponse(body=data, status_code=200, mimetype="application/vnd.apple.pkpass",
+                                 headers={"Content-Disposition": 'inline; filename="ResearchPass.pkpass"',
+                                          "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff",
+                                          "Referrer-Policy": "no-referrer"})
+    except Exception:
+        logging.exception("Wallet handoff open failed")
+        return func.HttpResponse("Unable to open this wallet link. Ask your research coordinator for a new QR code.", status_code=500, mimetype="text/plain")
