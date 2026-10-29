@@ -56,6 +56,7 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
         "barcode": {"type": "QR_CODE", "value": object_id},
         "textModulesData": [
             {"header": "Study protocol", "body": irb_number},
+            {"id": "institutional_author", "header": "Author", "body": "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences."},
         ],
     }
     color = str(settings.get("card_background") or "#005030")
