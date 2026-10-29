@@ -418,3 +418,37 @@ def admin_demo_data(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Demonstration data operation failed")
         return response({"error": "Unable to manage demonstration data"}, 500)
+
+
+@app.route(route="studies/{irb_number}/apple-wallet-pass", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def apple_wallet_pass(req: func.HttpRequest) -> func.HttpResponse:
+    """Download a signed synthetic Apple Wallet pass for an authorized study issuer."""
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        irb = req.route_params["irb_number"]
+        if role_for(irb, user_id) not in ("owner", "issuer"):
+            return response({"error": "Access denied"}, 403)
+        payload = req.get_json()
+        if not isinstance(payload, dict):
+            return response({"error": "JSON object required"}, 400)
+        from study_settings import get_settings
+        from system_admin import read_settings
+        from apple_wallet import build_pass
+        from pass_registry import record
+        settings = get_settings(irb)
+        data, serial = build_pass(settings, read_settings(), payload.get("participant_name"), payload.get("start_date") or "", payload.get("end_date") or "")
+        record(normalize_irb(irb), serial, user_id, settings.get("display_name", ""), platform="Apple Wallet", status="pass_generated")
+        return func.HttpResponse(
+            body=data, status_code=200, mimetype="application/vnd.apple.pkpass",
+            headers={"Content-Disposition": 'attachment; filename="ResearchPass.pkpass"',
+                     "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
+        )
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except RuntimeError as exc:
+        return response({"error": str(exc)}, 503)
+    except Exception:
+        logging.exception("Apple Wallet pass generation failed")
+        return response({"error": "Unable to generate Apple Wallet pass. Verify Apple certificate configuration."}, 500)
