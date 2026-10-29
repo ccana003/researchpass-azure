@@ -77,7 +77,8 @@ def list_all_study_access():
             "study_id": member["PartitionKey"],
             "study_title": study.get("study_title", ""),
             "user_id": member["RowKey"],
-            "email": emails.get(member["RowKey"], "Unknown account"),
+            "email": emails.get(member["RowKey"], member.get("demo_email", "Unknown account")),
+            "demo": bool(member.get("demo_tag")),
             "role": member.get("role", "issuer"),
             "active": bool(member.get("active", True)),
         })
