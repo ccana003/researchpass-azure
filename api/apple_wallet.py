@@ -101,7 +101,7 @@ def build_pass(settings, system_settings, name, start_date="", end_date=""):
             "primaryFields": [field("participant", "Participant", name.strip())],
             "secondaryFields": [field("study", "Study", study_title), field("pi", "Principal Investigator", settings.get("pi_name"))],
             "auxiliaryFields": [field("start", "Start Date", start_date), field("end", "End Date", end_date), field("contact", "Contact", settings.get("contact_email"))],
-            "backFields": [field("irb", "Study protocol", irb), field("footer", "About", "Developed by the University of Miami CTSI with support from NCATS (UM1TR004556).")],
+            "backFields": [field("irb", "Study protocol", irb), field("author", "Author", "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences.")],
         },
     }
     files = {"pass.json": json.dumps(pass_json, ensure_ascii=False, separators=(",",":")).encode("utf-8")}
