@@ -68,11 +68,13 @@ def upsert(payload):
     entity.update({
         "study_title": data["study_title"],
         "pi_name": data["principal_investigator"],
-        "contact_email": data["contact_email"],
-        "contact_phone": data["contact_phone"],
+
         "ibis_last_synced_at": datetime.now(timezone.utc).isoformat(),
         "ibis_sync_status": "synced"
     })
+    if not entity.get("contact_override", False):
+        entity["contact_email"] = data["contact_email"]
+        entity["contact_phone"] = data["contact_phone"]
     studies.update_entity(entity, mode="merge")
     # Keep IBIS study-team roster separate from ResearchPass access memberships.
     roster = _table("ResearchPassIBISStudyTeam")
