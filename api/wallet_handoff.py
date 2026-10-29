@@ -13,6 +13,7 @@ import qrcode
 from cryptography.fernet import Fernet
 from azure.data.tables import TableServiceClient
 from azure.core.exceptions import ResourceNotFoundError, ResourceModifiedError
+from azure.core import MatchConditions
 
 TABLE = "ResearchPassWalletHandoffs"
 LIFETIME = 15 * 60
@@ -58,6 +59,7 @@ def create(irb, issuer_id, settings, system_settings, payload):
     issuance = uuid.uuid4().hex
     expiry = int(time.time()) + LIFETIME
     table = _table()
+    from pass_registry import record
     result = {"issuance_id": issuance, "expires_at": datetime.fromtimestamp(expiry, timezone.utc).isoformat(), "wallets": {}}
     # The encrypted pass and URL exist only temporarily; neither appears in QR links.
     for platform, data, object_id in (("apple", apple_data, apple_serial), ("google", google_url.encode(), google_object)):
@@ -70,6 +72,7 @@ def create(irb, issuer_id, settings, system_settings, payload):
             "study_title": settings.get("display_name", ""),
             "created_at": datetime.now(timezone.utc).isoformat()
         })
+        record(irb, object_id, issuer_id, settings.get("display_name", ""), platform="Apple Wallet" if platform=="apple" else "Google Wallet", status="generated")
         url = _url(issuance + "." + platform + "." + token)
         result["wallets"][platform] = {"url": url, "qr_png": _qr(url), "status": "generated"}
     return result
@@ -97,7 +100,7 @@ def open_handoff(raw_token):
     entity["opened_at"] = datetime.now(timezone.utc).isoformat()
     entity["payload"] = ""
     try:
-        table.update_entity(entity, mode="replace", etag=entity.metadata["etag"], match_condition="IfNotModified")
+        table.update_entity(entity, mode="replace", etag=entity.metadata["etag"], match_condition=MatchConditions.IfNotModified)
     except ResourceModifiedError:
         return None
     record(entity["irb"], entity["object_id"], entity["issuer_id"], entity.get("study_title", ""),
