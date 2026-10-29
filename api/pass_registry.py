@@ -31,4 +31,5 @@ def list_events():
         "issued_at": e.get("created_at", ""),
         "platform": e.get("platform", ""),
         "status": e.get("status", "link_generated"),
+        "demo": bool(e.get("demo_tag")),
     } for e in table().list_entities()), key=lambda e: (e["study_id"], e["issued_at"]), reverse=False)
