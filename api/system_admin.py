@@ -46,13 +46,11 @@ def read_settings():
     return {
         "google_issuer_id": google_issuer_id,
         "google_class_id": google_class_id,
-        "apple_team_id": row.get("apple_team_id", ""),
-        "apple_pass_type_id": row.get("apple_pass_type_id", ""),
         "platform_label": row.get("platform_label", "Miami CTSI"),
         "card_background": row.get("card_background", "#005030"),
         "branding_assets": {name: bool(row.get("asset_" + name)) for name in ("hero", "logo")},
         "google_credentials_configured": google_credentials_configured,
-        "apple_certificate_configured": bool(os.getenv("RESEARCHPASS_APPLE_CERTIFICATE_REF")),
+        "apple_certificate_configured": all(bool(os.getenv(key, "").strip()) for key in ("APPLE_WWDR_BASE64", "APPLE_SIGNER_CERT_BASE64", "APPLE_SIGNERKEY_BASE64", "APPLE_PASS_TYPE_IDENTIFIER", "APPLE_TEAM_IDENTIFIER")),
         "wallet_generation_enabled": bool(google_credentials_configured and google_issuer_id and google_class_id),
     }
 
@@ -60,7 +58,7 @@ def read_settings():
 def write_settings(payload):
     if not isinstance(payload, dict):
         raise ValueError("JSON object required")
-    allowed = ("google_issuer_id", "google_class_id", "apple_team_id", "apple_pass_type_id", "platform_label", "card_background")
+    allowed = ("google_issuer_id", "google_class_id", "platform_label", "card_background")
     row = {"PartitionKey": "SYSTEM", "RowKey": "WALLET"}
     for key in allowed:
         value = payload.get(key, "")
