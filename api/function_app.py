@@ -498,3 +498,24 @@ def wallet_handoff_open(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Wallet handoff open failed")
         return func.HttpResponse("Unable to open this wallet link. Ask your research coordinator for a new QR code.", status_code=500, mimetype="text/plain")
+
+
+@app.route(route="integrations/ibis/studies", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def ibis_study_sync(req: func.HttpRequest) -> func.HttpResponse:
+    """IT-managed canonical IBIS study sync; never grants ResearchPass access."""
+    import hmac
+    import os
+    expected = os.environ.get("RESEARCHPASS_IBIS_INTEGRATION_KEY", "")
+    supplied = req.headers.get("x-researchpass-integration-key", "")
+    if len(expected) < 32 or not supplied or not hmac.compare_digest(expected, supplied):
+        return response({"error": "Unauthorized integration request"}, 401)
+    try:
+        from ibis_integration import upsert
+        return response(upsert(req.get_json()), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except LookupError as exc:
+        return response({"error": str(exc)}, 404)
+    except Exception:
+        logging.exception("IBIS study synchronization failed")
+        return response({"error": "Unable to synchronize IBIS study"}, 500)
