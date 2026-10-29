@@ -346,6 +346,10 @@ def admin_pass_registry(req: func.HttpRequest) -> func.HttpResponse:
         from pass_registry import list_events
         from local_auth import users_table
         emails = {u.get("user_id"): u["RowKey"] for u in users_table().list_entities()}
+        from memberships import table as memberships_table
+        for member in memberships_table().list_entities():
+            if member.get("demo_tag") and member.get("demo_email"):
+                emails[member["RowKey"]] = member["demo_email"]
         events = list_events()
         for event in events:
             event["issued_by"] = emails.get(event["issuer_id"], ("Synthetic demonstration issuer" if event.get("demo") else "Unknown account"))
