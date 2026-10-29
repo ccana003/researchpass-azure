@@ -21,7 +21,7 @@ def _service_account():
     return data
 
 
-def generate_save_url(settings, participant_name, start_date="", end_date=""):
+def generate_save_url(settings, participant_name, start_date="", end_date="", return_details=False):
     """Return a signed Google Wallet save URL. Never stores participant data."""
     issuer_id = str(settings.get("google_issuer_id", "")).strip()
     class_suffix = str(settings.get("google_class_id", "")).strip()
@@ -88,4 +88,4 @@ def generate_save_url(settings, participant_name, start_date="", end_date=""):
     url = "https://pay.google.com/gp/v/save/" + token
     if len(url) > 8000:
         raise ValueError("The generated Google Wallet link is too long. Shorten the study or participant display text and try again.")
-    return url
+    return (url, object_id) if return_details else url
