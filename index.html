@@ -90,7 +90,7 @@ button:disabled{opacity:.6;cursor:wait;transform:none;box-shadow:none}
 <script>
 "use strict";
 const API="https://researchpass-api-dev-czc2e6b8d8fyg0c6.eastus2-01.azurewebsites.net/api";
-let token="",account="",selectedRole="",selectedIrb="",settingsForPreview=null,adminSettings=null,registryEvents=[],accessMembers=[];
+let token="",account="",selectedRole="",selectedIrb="",settingsForPreview=null,adminSettings=null,registryEvents=[],accessMembers=[],registeredStudyCount=null;
 const el=id=>document.getElementById(id);
 function notice(message,error=false){const n=el("message");n.textContent=message;n.className="message"+(error?" error":"");}
 function clearNotice(){el("message").classList.add("hidden");}
@@ -228,7 +228,7 @@ function updateOversightSummary(){
   const records=registryEvents;
   const simulated=records.filter(x=>x.demo).length;
   const kpis=el("oversightKpis");kpis.replaceChildren();
-  for(const [name,value] of [["Total link records",records.length],["Studies",new Set(records.map(x=>x.study_id)).size],["Issuing personnel",new Set(records.map(x=>x.issuer_id)).size],["Simulated records",simulated]]){
+  for(const [name,value] of [["Total link records",records.length],["Registered studies",registeredStudyCount===null?"—":registeredStudyCount],["Studies with pass activity",new Set(records.map(x=>x.study_id)).size],["Issuing personnel",new Set(records.map(x=>x.issuer_id)).size],["Simulated records",simulated]]){
     const card=document.createElement("div");card.className="study";const title=document.createElement("strong");title.textContent=String(value);title.style.fontSize="28px";const desc=document.createElement("p");desc.className="small";desc.textContent=name;card.append(title,desc);kpis.append(card);
   }
   const countBy=key=>{const map=new Map();for(const record of records){const label=String(record[key]||"Unknown");map.set(label,(map.get(label)||0)+1);}return map;};
@@ -287,8 +287,8 @@ function renderOversight(){
 }
 async function loadOversight(){
   try{
-    const [registry,access]=await Promise.all([request("/system-admin/pass-registry",undefined,"GET"),request("/system-admin/study-access",undefined,"GET")]);
-    registryEvents=registry.events||[];accessMembers=access.memberships||[];renderOversight();
+    const [registry,access,studyCount]=await Promise.all([request("/system-admin/pass-registry",undefined,"GET"),request("/system-admin/study-access",undefined,"GET"),request("/system-admin/study-count",undefined,"GET")]);
+    registryEvents=registry.events||[];accessMembers=access.memberships||[];registeredStudyCount=studyCount.registered_studies;renderOversight();
   }catch(err){el("passRegistry").textContent="Unable to load oversight data: "+err.message;}
 }
 el("refreshOversight").onclick=loadOversight;
