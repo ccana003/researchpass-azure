@@ -519,3 +519,22 @@ def ibis_study_sync(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("IBIS study synchronization failed")
         return response({"error": "Unable to synchronize IBIS study"}, 500)
+
+
+@app.route(route="studies/{irb_number}/ibis-information", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def study_ibis_information(req: func.HttpRequest) -> func.HttpResponse:
+    """All authorized study members may view IBIS data; no roster-based authorization."""
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    irb = req.route_params["irb_number"]
+    try:
+        if not role_for(irb, user_id):
+            return response({"error": "Access denied"}, 403)
+        from ibis_integration import get_study_information
+        return response(get_study_information(irb), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Unable to retrieve IBIS study information")
+        return response({"error": "Unable to load IBIS study information"}, 500)
