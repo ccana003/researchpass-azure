@@ -3,7 +3,7 @@ import os
 from azure.data.tables import TableServiceClient
 from studies import normalize_irb
 
-FIELDS = ("pi_name", "contact_email", "contact_phone", "display_name")
+FIELDS = ("pi_name", "contact_email", "contact_phone", "display_name", "study_notes")
 def client():
     connection = os.environ.get("RESEARCHPASS_STORAGE_CONNECTION")
     if not connection:
@@ -19,6 +19,7 @@ def get_settings(irb_number):
         "pi_name": entity.get("pi_name", ""),
         "contact_email": entity.get("contact_email", ""),
         "contact_phone": entity.get("contact_phone", ""),
+        "study_notes": entity.get("study_notes", ""),
         "require_start_date": entity.get("require_start_date", False),
         "require_end_date": entity.get("require_end_date", False),
     }
@@ -29,8 +30,8 @@ def save_settings(irb_number, payload):
     entity = client().get_entity(partition_key="STUDY", row_key=normalize_irb(irb_number))
     for field in FIELDS:
         value = payload.get(field, "")
-        if not isinstance(value, str) or len(value.strip()) > 250:
-            raise ValueError(field + " must be text of at most 250 characters")
+        if not isinstance(value, str) or len(value.strip()) > (1000 if field == "study_notes" else 250):
+            raise ValueError(field + " must be valid text within its character limit")
         entity[field] = value.strip()
     for field in ("require_start_date", "require_end_date"):
         value = payload.get(field, False)
@@ -39,5 +40,6 @@ def save_settings(irb_number, payload):
         entity[field] = value
     if entity["contact_email"] and ("@" not in entity["contact_email"] or " " in entity["contact_email"]):
         raise ValueError("contact_email must be a valid email address")
+    entity["contact_override"] = True
     client().update_entity(entity=entity, mode="merge")
     return get_settings(irb_number)
