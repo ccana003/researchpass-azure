@@ -3,3 +3,5 @@ azure-data-tables
 PyJWT[crypto]>=2.8,<3
 
 azure-storage-blob>=12,<13
+
+Pillow>=10,<13
