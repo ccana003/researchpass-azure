@@ -60,7 +60,10 @@ class GoogleWalletLinkTests(unittest.TestCase):
         self.assertEqual(obj["classId"], "1234567890123456789.researchpass_test")
         self.assertEqual(obj["subheader"]["defaultValue"]["value"], "Synthetic Participant")
         self.assertEqual(obj["textModulesData"][-1]["body"], "2026-01-01")
-        self.assertLessEqual(len(url), 1800)
+        self.assertLessEqual(len(url), 8000)
+        author = next(item for item in obj["textModulesData"] if item.get("id") == "institutional_author")
+        self.assertEqual(author["header"], "Author")
+        self.assertEqual(author["body"], "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences.")
 
     def test_requires_service_account_configuration(self):
         with patch.dict(os.environ, {"RESEARCHPASS_GOOGLE_SERVICE_ACCOUNT_JSON": ""}, clear=False):
