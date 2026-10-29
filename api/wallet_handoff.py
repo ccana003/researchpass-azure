@@ -59,6 +59,13 @@ def create(irb, issuer_id, settings, system_settings, payload):
     issuance = uuid.uuid4().hex
     expiry = int(time.time()) + LIFETIME
     table = _table()
+    # Remove expired encrypted handoffs opportunistically; never retain participant payloads indefinitely.
+    now = int(time.time())
+    for stale in table.query_entities(query_filter="expires_at lt @cutoff", parameters={"cutoff": now}):
+        try:
+            table.delete_entity(partition_key=stale["PartitionKey"], row_key=stale["RowKey"])
+        except ResourceNotFoundError:
+            pass
     from pass_registry import record
     result = {"issuance_id": issuance, "expires_at": datetime.fromtimestamp(expiry, timezone.utc).isoformat(), "wallets": {}}
     # The encrypted pass and URL exist only temporarily; neither appears in QR links.
