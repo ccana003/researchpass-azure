@@ -38,7 +38,9 @@ def validate(payload):
         members.append({
             "name": _text(person.get("name"), "study_team.name", 150, True),
             "email": _email(person.get("email"), "study_team.email"),
-            "role": _text(person.get("role"), "study_team.role", 100)
+            "role": _text(person.get("role"), "study_team.role", 100),
+            "external_person_id": _text(person.get("external_person_id"), "study_team.external_person_id", 100),
+            "external_id_type": _text(person.get("external_id_type"), "study_team.external_id_type", 50)
         })
     return {
         "protocol_number": irb,
