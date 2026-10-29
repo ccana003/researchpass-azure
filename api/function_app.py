@@ -255,7 +255,9 @@ def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
                     return response({"error": field + " must use YYYY-MM-DD"}, 400)
         if start_date and end_date and end_date < start_date:
             return response({"error": "End date cannot precede start date"}, 400)
-        save_url = generate_save_url(wallet_settings, name, start_date, end_date)
+        save_url, object_id = generate_save_url(wallet_settings, name, start_date, end_date, return_details=True)
+        from pass_registry import record
+        record(normalize_irb(irb), object_id, user_id, settings.get("display_name", ""))
         return response({
             "save_url": save_url,
             "message": "Google Wallet save link generated. The pass is created when the user saves it to Google Wallet.",
@@ -330,3 +332,61 @@ def admin_branding_upload(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to save branding image")
         return response({"error": "Unable to save branding image"}, 500)
+
+
+@app.route(route="system-admin/pass-registry", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_pass_registry(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        from pass_registry import list_events
+        from local_auth import users_table
+        emails = {u.get("user_id"): u["RowKey"] for u in users_table().list_entities()}
+        events = list_events()
+        for event in events:
+            event["issued_by"] = emails.get(event["issuer_id"], "Unknown account")
+        return response({"events": events, "note": "Generated links only; Google Wallet save cannot currently be confirmed."}, 200)
+    except Exception:
+        logging.exception("Unable to load pass registry")
+        return response({"error": "Unable to load pass registry"}, 500)
+
+
+@app.route(route="system-admin/study-access", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_study_access(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        from memberships import list_all_study_access
+        return response({"memberships": list_all_study_access()}, 200)
+    except Exception:
+        logging.exception("Unable to load study access roster")
+        return response({"error": "Unable to load study access roster"}, 500)
+
+
+@app.route(route="system-admin/study-access/{irb_number}/{target_user_id}", methods=["PUT"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_update_study_access(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        payload = req.get_json()
+        if not isinstance(payload, dict) or type(payload.get("active")) is not bool:
+            return response({"error": "Boolean active field required"}, 400)
+        from memberships import set_membership_active
+        return response(set_membership_active(req.route_params["irb_number"], req.route_params["target_user_id"], payload["active"]), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Unable to update study access")
+        return response({"error": "Unable to update study access"}, 500)
