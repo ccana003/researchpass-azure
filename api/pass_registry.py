@@ -10,15 +10,15 @@ def table():
     service.create_table_if_not_exists(TABLE)
     return service.get_table_client(TABLE)
 
-def record(irb, object_id, issuer_id, study_title):
+def record(irb, object_id, issuer_id, study_title, platform="Google Wallet", status="link_generated"):
     table().create_entity({
         "PartitionKey": irb,
         "RowKey": object_id.split(".")[-1],
         "wallet_object_id": object_id,
         "issuer_id": issuer_id,
         "study_title": study_title,
-        "platform": "Google Wallet",
-        "status": "link_generated",
+        "platform": platform,
+        "status": status,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
 
