@@ -86,3 +86,25 @@ def upsert(payload):
     return {"protocol_number": data["protocol_number"], "status": "synced",
             "study_team_count": len(data["study_team"]), "access_granted": False,
             "synced_at": entity["ibis_last_synced_at"]}
+
+
+def get_study_information(irb_number):
+    """Read canonical IBIS metadata and non-authorizing team roster."""
+    import json
+    key = normalize_irb(irb_number)
+    entity = _table("ResearchPassStudies").get_entity(partition_key="STUDY", row_key=key)
+    members = []
+    if entity.get("ibis_last_synced_at"):
+        try:
+            roster = _table("ResearchPassIBISStudyTeam").get_entity(partition_key="STUDY", row_key=key)
+            members = json.loads(roster.get("study_team_json", "[]"))
+        except ResourceNotFoundError:
+            pass
+    return {
+        "protocol_number": entity.get("irb_number", irb_number),
+        "study_title": entity.get("study_title", ""),
+        "principal_investigator": entity.get("pi_name", ""),
+        "last_synced_at": entity.get("ibis_last_synced_at"),
+        "study_team": members,
+        "access_granted_by_import": False
+    }
