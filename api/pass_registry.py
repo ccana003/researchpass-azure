@@ -11,7 +11,7 @@ def table():
     return service.get_table_client(TABLE)
 
 def record(irb, object_id, issuer_id, study_title, platform="Google Wallet", status="link_generated"):
-    table().create_entity({
+    table().upsert_entity({
         "PartitionKey": irb,
         "RowKey": object_id.split(".")[-1],
         "wallet_object_id": object_id,
