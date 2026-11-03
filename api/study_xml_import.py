@@ -49,7 +49,7 @@ def parse_xml(raw):
         if key in studies:
             errors.append("Row %d: duplicate EprostNbr %s" % (index, irb))
             continue
-        record = {"irb_number": irb}
+        record = {"irb_number": irb, "institutional_contact_email": fields.get("StudyContactEmail", "").strip()}
         for source, (target, limit) in FIELDS.items():
             value = fields.get(source, "")
             if len(value) > limit:
