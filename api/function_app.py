@@ -599,3 +599,39 @@ def admin_study_import_commit(req: func.HttpRequest) -> func.HttpResponse:
         logging.exception("Study XML import failed")
         return response({"error": "Unable to complete study import; check records before retrying"}, 500)
 
+
+@app.route(route="system-admin/studies", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_all_studies(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error":"System administrator access required"},403)
+    try:
+        from admin_studies import all_studies
+        return response(all_studies(),200)
+    except Exception:
+        logging.exception("Unable to load institutional studies")
+        return response({"error":"Unable to load institutional studies"},500)
+
+
+@app.route(route="system-admin/studies/{irb_number}/status", methods=["PUT"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_study_status(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error":"System administrator access required"},403)
+    try:
+        payload=req.get_json()
+        if not isinstance(payload,dict):
+            return response({"error":"JSON object required"},400)
+        from admin_studies import set_status
+        return response(set_status(req.route_params["irb_number"],payload.get("status")),200)
+    except ValueError as exc:
+        return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Unable to update institutional study status")
+        return response({"error":"Unable to update study status"},500)
