@@ -33,3 +33,11 @@ def set_status(irb,status):
     entity["status_updated_at"]=datetime.now(timezone.utc).isoformat()
     client.update_entity(entity,mode="merge")
     return {"study":clean(entity),"message":"Study status updated; membership permissions are unchanged"}
+
+def is_issuance_enabled(irb):
+    key=normalize_irb(irb)
+    try:
+        entity=table().get_entity(partition_key="STUDY",row_key=key)
+    except ResourceNotFoundError:
+        return False
+    return entity.get("study_status") in ("active","registered")
