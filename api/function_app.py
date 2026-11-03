@@ -559,3 +559,43 @@ def admin_study_count(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to count registered studies")
         return response({"error": "Unable to count registered studies"}, 500)
+
+
+@app.route(route="system-admin/study-import/preview", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_study_import_preview(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    from study_xml_import import plan
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        return response(plan(req.get_body()), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Study XML preview failed")
+        return response({"error": "Unable to preview study import"}, 500)
+
+
+@app.route(route="system-admin/study-import/commit", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def admin_study_import_commit(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    from study_xml_import import apply
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    if not is_admin(user_id):
+        return response({"error": "System administrator access required"}, 403)
+    try:
+        expected_sha = req.headers.get("x-researchpass-import-sha256", "")
+        if not re.fullmatch(r"[a-f0-9]{64}", expected_sha):
+            return response({"error": "Preview file before importing"}, 400)
+        return response(apply(req.get_body(), expected_sha, user_id), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except Exception:
+        logging.exception("Study XML import failed")
+        return response({"error": "Unable to complete study import; check records before retrying"}, 500)
+
