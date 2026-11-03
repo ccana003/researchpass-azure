@@ -638,3 +638,69 @@ def admin_study_status(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to update institutional study status")
         return response({"error":"Unable to update study status"},500)
+
+@app.route(route="my-study-claims",methods=["GET"],auth_level=func.AuthLevel.ANONYMOUS)
+def my_study_claims(req: func.HttpRequest) -> func.HttpResponse:
+    user_id,error=current_user(req)
+    if error is not None: return error
+    try:
+        from study_ownership import eligible_studies
+        return response(eligible_studies(user_id),200)
+    except Exception:
+        logging.exception("Unable to load eligible studies")
+        return response({"error":"Unable to load claimable studies"},500)
+
+@app.route(route="studies/{irb_number}/claim",methods=["POST"],auth_level=func.AuthLevel.ANONYMOUS)
+def claim_study(req: func.HttpRequest) -> func.HttpResponse:
+    user_id,error=current_user(req)
+    if error is not None: return error
+    try:
+        from study_ownership import claim
+        return response(claim(req.route_params["irb_number"],user_id),200)
+    except PermissionError as exc: return response({"error":str(exc)},403)
+    except ValueError as exc: return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Unable to claim study")
+        return response({"error":"Unable to claim study"},500)
+
+@app.route(route="system-admin/studies/{irb_number}/owners",methods=["POST"],auth_level=func.AuthLevel.ANONYMOUS)
+def admin_assign_owner(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id,error=current_user(req)
+    if error is not None: return error
+    if not is_admin(user_id): return response({"error":"System administrator access required"},403)
+    try:
+        from study_ownership import assign_by_email
+        return response(assign_by_email(req.route_params["irb_number"],req.get_json().get("email")),200)
+    except ValueError as exc: return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Unable to assign owner")
+        return response({"error":"Unable to assign owner"},500)
+
+@app.route(route="system-admin/accounts/verify-email",methods=["POST"],auth_level=func.AuthLevel.ANONYMOUS)
+def admin_verify_email(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id,error=current_user(req)
+    if error is not None: return error
+    if not is_admin(user_id): return response({"error":"System administrator access required"},403)
+    try:
+        from study_ownership import verify_account
+        return response(verify_account(req.get_json().get("email")),200)
+    except ValueError as exc: return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Unable to mark verified account")
+        return response({"error":"Unable to verify account"},500)
+
+@app.route(route="system-admin/studies/{irb_number}/pi-email",methods=["PUT"],auth_level=func.AuthLevel.ANONYMOUS)
+def admin_pi_email(req: func.HttpRequest) -> func.HttpResponse:
+    from system_admin import is_admin
+    user_id,error=current_user(req)
+    if error is not None: return error
+    if not is_admin(user_id): return response({"error":"System administrator access required"},403)
+    try:
+        from study_ownership import set_pi_email
+        return response(set_pi_email(req.route_params["irb_number"],req.get_json().get("email")),200)
+    except ValueError as exc: return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Unable to update PI email")
+        return response({"error":"Unable to update PI email"},500)
