@@ -4,7 +4,7 @@ from azure.core.exceptions import ResourceNotFoundError
 from study_xml_import import table
 from studies import normalize_irb
 
-PUBLIC_FIELDS = ("irb_number","study_title","pi_name","study_contact","contact_email","contact_phone","institutional_status","velos_study_status","study_status","xml_last_imported_at","created_at","created_by","display_name","study_notes","xml_imported_by")
+PUBLIC_FIELDS = ("irb_number","study_title","pi_name","pi_email","institutional_contact_email","study_contact","contact_email","contact_phone","institutional_status","velos_study_status","study_status","xml_last_imported_at","created_at","created_by","display_name","study_notes","xml_imported_by")
 def clean(entity):
     result={k:entity.get(k,"") for k in PUBLIC_FIELDS}
     result["irb_number"]=result["irb_number"] or entity.get("RowKey","")
