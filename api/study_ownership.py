@@ -41,7 +41,7 @@ def eligible_studies(user_id):
     for s in studies_table().query_entities("PartitionKey eq 'STUDY'"):
         if s.get("study_status") not in ("active","registered"):
             continue
-        eligible=[s.get("pi_email",""),s.get("institutional_contact_email",s.get("contact_email",""))]
+        eligible=[s.get("pi_email",""),s.get("institutional_contact_email","")]
         if email not in [str(v).strip().lower() for v in eligible if v]:
             continue
         if role_for(s.get("irb_number",s["RowKey"]),user_id)=="owner":
