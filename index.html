@@ -134,6 +134,7 @@ body:has(#dashboard:not(.hidden)) .footer{margin-left:210px}
 
 /* Full application views and dashboard, preserving all existing forms and handlers */
 body[data-active-view] #dashboard .viewTarget:not([data-app-view="home"]){display:none!important}
+body[data-active-view="all-studies"] #dashboard .viewTarget[data-app-view="all-studies"],
 body[data-active-view="studies"] #dashboard .viewTarget[data-app-view="studies"],
 body[data-active-view="issuance"] #dashboard .viewTarget[data-app-view="issuance"],
 body[data-active-view="configuration"] #dashboard .viewTarget[data-app-view="configuration"],
