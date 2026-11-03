@@ -230,6 +230,9 @@ def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
         from study_settings import get_settings
         from system_admin import read_settings
         from google_wallet import generate_save_url
+        from admin_studies import is_issuance_enabled
+        if not is_issuance_enabled(irb):
+            return response({"error":"This study is inactive in ResearchPass; a system administrator must activate it before issuing passes"},403)
         settings = get_settings(irb)
         system_settings = read_settings()
         wallet_settings = {
