@@ -61,6 +61,14 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
             {"id": "institutional_author", "header": "Author", "body": "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences."},
         ],
     }
+    if settings.get("participant_hub_url"):
+        generic_object["linksModuleData"] = {
+            "uris": [{
+                "id": "study_resources",
+                "uri": settings["participant_hub_url"],
+                "description": "Study Information & Resources"
+            }]
+        }
     if settings.get("study_notes"):
         generic_object["textModulesData"].append({"id": "study_notes", "header": "Study description / notes", "body": str(settings["study_notes"])[:1000]})
     color = str(settings.get("card_background") or "#005030")
