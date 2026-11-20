@@ -35,7 +35,9 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
         raise ValueError("Synthetic participant name is required (1-100 characters).")
 
     account = _service_account()
-    # A class-level homepage must be unique to each study.\n    irb_for_class = re.sub(r"[^A-Za-z0-9._-]", "_", str(settings.get("irb_number") or ""))[:48]\n    class_id = f"{issuer_id}.{class_suffix}_{irb_for_class}" if irb_for_class else f"{issuer_id}.{class_suffix}"
+    # A class-level homepage must be unique to each study.
+    irb_for_class = re.sub(r"[^A-Za-z0-9._-]", "_", str(settings.get("irb_number") or ""))[:48]
+    class_id = f"{issuer_id}.{class_suffix}_{irb_for_class}" if irb_for_class else f"{issuer_id}.{class_suffix}"
     object_suffix = uuid.uuid4().hex
     object_id = f"{issuer_id}.{object_suffix}"
     study_name = str(settings.get("display_name") or "ResearchPass Study")[:100]
@@ -65,7 +67,13 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
     }
     hub_url = settings.get("participant_hub_url")
     if hub_url:
-        # Google Pass Builder places homepageUri on the GenericClass.\n        # A study-specific class ID prevents the URL leaking across studies.\n        generic_class["homepageUri"] = {\n            "uri": hub_url,\n            "description": "Study Information & Resources",\n        }\n        generic_object["linksModuleData"] = {
+        # Google Pass Builder places homepageUri on the GenericClass.
+        # A study-specific class ID prevents the URL leaking across studies.
+        generic_class["homepageUri"] = {
+            "uri": hub_url,
+            "description": "Study Information & Resources",
+        }
+        generic_object["linksModuleData"] = {
             "uris": [{
                 "id": "study_resources",
                 "uri": hub_url,
