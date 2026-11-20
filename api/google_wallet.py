@@ -75,7 +75,7 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
         }
         generic_object["linksModuleData"] = {
             "uris": [{
-                "id": "study_resources",
+                "id": "link-0",
                 "uri": hub_url,
                 "description": "Study Information & Resources"
             }]
