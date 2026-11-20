@@ -44,7 +44,7 @@ def upload(irb,payload):
     kind=payload.get("kind")
     if kind not in KINDS: raise ValueError("Unsupported document category")
     filename=payload.get("filename","")
-    if not isinstance(filename,str) or not re.fullmatch(r"[a-zA-Z0-9 _().-]{1,120}\\.pdf",filename,re.I):
+    if not isinstance(filename,str) or not re.fullmatch(r"[a-zA-Z0-9 _().-]{1,120}\.pdf",filename,re.I):
         raise ValueError("Use a PDF filename with letters, numbers, spaces, hyphens, underscores, or parentheses (e.g., Study Consent Form.pdf)")
     try: raw=base64.b64decode(payload.get("content_base64",""),validate=True)
     except Exception: raise ValueError("Invalid PDF data") from None
