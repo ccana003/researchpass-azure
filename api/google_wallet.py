@@ -61,14 +61,21 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
             {"id": "institutional_author", "header": "Author", "body": "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences."},
         ],
     }
-    if settings.get("participant_hub_url"):
+    hub_url = settings.get("participant_hub_url")
+    if hub_url:
+        # A native tappable Wallet link, plus a clearly labeled detail entry.
         generic_object["linksModuleData"] = {
             "uris": [{
                 "id": "study_resources",
-                "uri": settings["participant_hub_url"],
+                "uri": hub_url,
                 "description": "Study Information & Resources"
             }]
         }
+        generic_object["textModulesData"].insert(1, {
+            "id": "participant_resources",
+            "header": "Study Information & Resources",
+            "body": "Open the study's general information, documents, and contacts using the link below."
+        })
     if settings.get("study_notes"):
         generic_object["textModulesData"].append({"id": "study_notes", "header": "Study description / notes", "body": str(settings["study_notes"])[:1000]})
     color = str(settings.get("card_background") or "#005030")
