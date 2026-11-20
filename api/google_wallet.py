@@ -118,3 +118,55 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
     if len(url) > 8000:
         raise ValueError("The generated Google Wallet link is too long. Shorten the study or participant display text and try again.")
     return (url, object_id) if return_details else url
+
+def inspect_saved_object(object_id, class_id):
+    """Read back only link metadata from Google's stored Wallet resources."""
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import urlencode, quote
+    from urllib.request import Request, urlopen
+
+    account = _service_account()
+    now = int(time.time())
+    assertion = jwt.encode({
+        "iss": account["client_email"],
+        "scope": "https://www.googleapis.com/auth/wallet_object.issuer",
+        "aud": account.get("token_uri", "https://oauth2.googleapis.com/token"),
+        "iat": now,
+        "exp": now + 3600,
+    }, account["private_key"], algorithm="RS256")
+    token_req = Request(
+        account.get("token_uri", "https://oauth2.googleapis.com/token"),
+        data=urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer", "assertion": assertion}).encode(),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urlopen(token_req, timeout=12) as r:
+            access_token = json.load(r)["access_token"]
+    except (HTTPError, URLError, KeyError) as exc:
+        raise RuntimeError("Unable to authenticate to Google Wallet API") from exc
+
+    def fetch(kind, resource_id):
+        url = "https://walletobjects.googleapis.com/walletobjects/v1/" + kind + "/" + quote(resource_id, safe="")
+        request = Request(url, headers={"Authorization": "Bearer " + access_token})
+        try:
+            with urlopen(request, timeout=12) as r:
+                return json.load(r), 200
+        except HTTPError as exc:
+            if exc.code == 404:
+                return None, 404
+            raise RuntimeError("Google Wallet API rejected " + kind + " lookup (HTTP " + str(exc.code) + ")") from exc
+        except URLError as exc:
+            raise RuntimeError("Unable to reach Google Wallet API") from exc
+
+    obj, object_status = fetch("genericObject", object_id)
+    cls, class_status = fetch("genericClass", class_id)
+    links = ((obj or {}).get("linksModuleData") or {}).get("uris") or []
+    homepage = (cls or {}).get("homepageUri") or {}
+    return {
+        "object_found": object_status == 200,
+        "class_found": class_status == 200,
+        "object_has_resources_link": any(link.get("id") == "link-0" for link in links),
+        "object_link_count": len(links),
+        "class_has_homepage": bool(homepage.get("uri")),
+        "object_state": (obj or {}).get("state"),
+    }
