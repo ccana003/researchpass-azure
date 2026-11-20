@@ -62,7 +62,7 @@ class GoogleWalletLinkTests(unittest.TestCase):
         self.assertEqual(obj["subheader"]["defaultValue"]["value"], "Synthetic Study")
         self.assertNotIn("barcode", obj)
         self.assertEqual(next(item["body"] for item in obj["textModulesData"] if item.get("id") == "participant_name"), "Synthetic Participant")
-        self.assertEqual(obj["textModulesData"][-1]["body"], "2026-01-01")
+        self.assertEqual(next(item["body"] for item in obj["textModulesData"] if item.get("header") == "Study start"), "2026-01-01")
         self.assertLessEqual(len(url), 8000)
         author = next(item for item in obj["textModulesData"] if item.get("id") == "institutional_author")
         self.assertEqual(author["header"], "Author")
