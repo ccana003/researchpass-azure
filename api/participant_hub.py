@@ -59,7 +59,7 @@ def upload(irb,payload):
     blob.create_container(CONTAINER) if not blob.get_container_client(CONTAINER).exists() else None
     blob.get_blob_client(CONTAINER,normalize_irb(irb)+"/"+doc_id+".pdf").upload_blob(raw,overwrite=False,content_settings=ContentSettings(content_type="application/pdf"))
     docs.append({"id":doc_id,"kind":kind,"filename":filename})
-    client.update_entity({"PartitionKey":"STUDY","RowKey":normalize_irb(irb),"hub_documents":json.dumps(docs)},mode=UpdateMode.MERGE)
+    client.update_entity({"PartitionKey":"STUDY","RowKey":normalize_irb(irb),"hub_documents":json.dumps(docs),"hub_published":False},mode=UpdateMode.MERGE)
     return get(irb)
 
 def remove(irb,doc_id):
