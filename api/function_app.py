@@ -258,6 +258,7 @@ def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
                     return response({"error": field + " must use YYYY-MM-DD"}, 400)
         if start_date and end_date and end_date < start_date:
             return response({"error": "End date cannot precede start date"}, 400)
+        wallet_settings["participant_hub_url"] = published_participant_hub_url(irb)
         save_url, object_id = generate_save_url(wallet_settings, name, start_date, end_date, return_details=True)
         from pass_registry import record
         record(normalize_irb(irb), object_id, user_id, settings.get("display_name", ""))
@@ -441,6 +442,7 @@ def apple_wallet_pass(req: func.HttpRequest) -> func.HttpResponse:
         from apple_wallet import build_pass
         from pass_registry import record
         settings = get_settings(irb)
+        settings["participant_hub_url"] = published_participant_hub_url(irb)
         data, serial = build_pass(settings, read_settings(), payload.get("participant_name"), payload.get("start_date") or "", payload.get("end_date") or "")
         record(normalize_irb(irb), serial, user_id, settings.get("display_name", ""), platform="Apple Wallet", status="pass_generated")
         return func.HttpResponse(
@@ -704,6 +706,18 @@ def admin_pi_email(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to update PI email")
         return response({"error":"Unable to update PI email"},500)
+
+def published_participant_hub_url(irb):
+    """Only expose study-wide information when the Hub is published and the study is eligible."""
+    from participant_hub import get
+    try:
+        get(irb, public=True)
+    except ValueError:
+        return None
+    import os
+    base = os.getenv("RESEARCHPASS_PUBLIC_WEB_BASE", "https://gray-river-0cb04570f.6.azurestaticapps.net").rstrip("/")
+    return base + "/participant.html?study=" + normalize_irb(irb)
+
 
 @app.route(route="studies/{irb_number}/participant-hub",methods=["GET","PUT"],auth_level=func.AuthLevel.ANONYMOUS)
 def manage_participant_hub(req: func.HttpRequest) -> func.HttpResponse:
