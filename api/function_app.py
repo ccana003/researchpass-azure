@@ -277,6 +277,48 @@ def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
         return response({"error": "Unable to generate Google Wallet save link"}, 500)
 
 
+@app.route(route="studies/{irb_number}/google-wallet-diagnostic", methods=["POST"], auth_level=func.AuthLevel.ANONYMOUS)
+def google_wallet_diagnostic(req: func.HttpRequest) -> func.HttpResponse:
+    """Read back Google-stored link metadata for a pass issued by this study."""
+    user_id, error = current_user(req)
+    if error is not None:
+        return error
+    try:
+        irb = normalize_irb(req.route_params["irb_number"])
+        if role_for(irb, user_id) not in ("owner", "issuer"):
+            return response({"error": "Access denied"}, 403)
+        body = req.get_json()
+        object_id = body.get("object_id") if isinstance(body, dict) else None
+        import re
+        if not isinstance(object_id, str) or not re.fullmatch(r"[0-9]+\\.[A-Za-z0-9._-]{1,128}", object_id):
+            return response({"error": "Valid Google Wallet object_id required"}, 400)
+        from pass_registry import table
+        from azure.core.exceptions import ResourceNotFoundError
+        try:
+            event = table().get_entity(partition_key=irb, row_key=object_id.split(".")[-1])
+        except ResourceNotFoundError:
+            return response({"error": "Pass not found in this study"}, 404)
+        if event.get("wallet_object_id") != object_id or event.get("platform") != "Google Wallet":
+            return response({"error": "Pass not found in this study"}, 404)
+        from system_admin import read_settings
+        from study_settings import get_settings
+        from google_wallet import inspect_saved_object
+        system = read_settings()
+        study = get_settings(irb)
+        suffix = str(system.get("google_class_id") or "")
+        class_irb = re.sub(r"[^A-Za-z0-9._-]", "_", str(study.get("irb_number") or irb))[:48]
+        class_id = object_id.split(".")[0] + "." + suffix + "_" + class_irb
+        return response(inspect_saved_object(object_id, class_id), 200)
+    except ValueError as exc:
+        return response({"error": str(exc)}, 400)
+    except RuntimeError as exc:
+        logging.exception("Google Wallet diagnostic unavailable")
+        return response({"error": str(exc)}, 502)
+    except Exception:
+        logging.exception("Google Wallet diagnostic failed")
+        return response({"error": "Unable to inspect saved Google Wallet pass"}, 500)
+
+
 @app.route(route="system-admin/me", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def admin_me(req: func.HttpRequest) -> func.HttpResponse:
     from system_admin import is_admin
