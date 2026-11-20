@@ -51,10 +51,12 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
         "classId": class_id,
         "state": "ACTIVE",
         "cardTitle": {"defaultValue": {"language": "en-US", "value": "ResearchPass"}},
-        "header": {"defaultValue": {"language": "en-US", "value": study_name}},
-        "subheader": {"defaultValue": {"language": "en-US", "value": participant_name.strip()}},
-        "barcode": {"type": "QR_CODE", "value": object_id},
+        "header": {"defaultValue": {"language": "en-US", "value": participant_name.strip()}},
+        "subheader": {"defaultValue": {"language": "en-US", "value": study_name}},
         "textModulesData": [
+            {"id": "participant_name", "header": "Participant", "body": participant_name.strip()},
+            {"id": "study_name", "header": "Study", "body": study_name},
+            {"id": "principal_investigator", "header": "Principal Investigator", "body": str(settings.get("pi_name") or "Not provided")[:250]},
             {"header": "Study protocol", "body": irb_number},
             {"header": "Study contact email", "body": str(settings.get("contact_email") or "Not provided")[:250]},
             {"header": "Study contact phone", "body": str(settings.get("contact_phone") or "Not provided")[:250]},
@@ -88,9 +90,9 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
     if assets.get("hero"):
         generic_object["heroImage"] = {"sourceUri": {"uri": base_url + "/api/wallet-branding/hero"}}
     if start_date:
-        generic_object["textModulesData"].append({"header": "Study start", "body": start_date})
+        generic_object["textModulesData"].insert(3, {"header": "Study start", "body": start_date})
     if end_date:
-        generic_object["textModulesData"].append({"header": "Study end", "body": end_date})
+        generic_object["textModulesData"].insert(4 if start_date else 3, {"header": "Study end", "body": end_date})
 
     origins = [item.strip() for item in os.getenv("RESEARCHPASS_WALLET_ORIGINS", "").split(",") if item.strip()]
     claims = {
