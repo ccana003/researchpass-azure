@@ -266,6 +266,7 @@ def google_wallet_link(req: func.HttpRequest) -> func.HttpResponse:
             "save_url": save_url,
             "message": "Google Wallet save link generated. The pass is created when the user saves it to Google Wallet.",
             "test_only": True,
+            "study_resources_included": bool(wallet_settings["participant_hub_url"]),
         }, 200)
     except ValueError as exc:
         return response({"error": str(exc)}, 400)
@@ -710,9 +711,8 @@ def admin_pi_email(req: func.HttpRequest) -> func.HttpResponse:
 def published_participant_hub_url(irb):
     """Only expose study-wide information when the Hub is published and the study is eligible."""
     from participant_hub import get
-    try:
-        get(irb, public=True)
-    except ValueError:
+    hub = get(irb, public=False)
+    if not hub["published"]:
         return None
     import os
     base = os.getenv("RESEARCHPASS_PUBLIC_WEB_BASE", "https://gray-river-0cb04570f.6.azurestaticapps.net").rstrip("/")
