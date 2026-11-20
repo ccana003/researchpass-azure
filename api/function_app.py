@@ -704,3 +704,73 @@ def admin_pi_email(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         logging.exception("Unable to update PI email")
         return response({"error":"Unable to update PI email"},500)
+
+@app.route(route="studies/{irb_number}/participant-hub",methods=["GET","PUT"],auth_level=func.AuthLevel.ANONYMOUS)
+def manage_participant_hub(req: func.HttpRequest) -> func.HttpResponse:
+    user_id,error=current_user(req)
+    if error is not None:return error
+    irb=req.route_params["irb_number"]
+    role=role_for(irb,user_id)
+    if role not in ("owner","issuer"):return response({"error":"Access denied"},403)
+    try:
+        from participant_hub import get,save
+        if req.method=="PUT":
+            if role!="owner":return response({"error":"Only study owners can publish resources"},403)
+            return response(save(irb,req.get_json()),200)
+        return response(get(irb),200)
+    except ValueError as exc:return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Participant hub operation failed")
+        return response({"error":"Unable to manage participant resources"},500)
+
+@app.route(route="studies/{irb_number}/participant-hub/documents",methods=["POST"],auth_level=func.AuthLevel.ANONYMOUS)
+def upload_participant_hub_document(req: func.HttpRequest) -> func.HttpResponse:
+    user_id,error=current_user(req)
+    if error is not None:return error
+    irb=req.route_params["irb_number"]
+    if role_for(irb,user_id)!="owner":return response({"error":"Owner access required"},403)
+    try:
+        from participant_hub import upload
+        return response(upload(irb,req.get_json()),201)
+    except ValueError as exc:return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Participant document upload failed")
+        return response({"error":"Unable to upload PDF"},500)
+
+@app.route(route="studies/{irb_number}/participant-hub/documents/{doc_id}",methods=["DELETE"],auth_level=func.AuthLevel.ANONYMOUS)
+def remove_participant_hub_document(req: func.HttpRequest) -> func.HttpResponse:
+    user_id,error=current_user(req)
+    if error is not None:return error
+    irb=req.route_params["irb_number"]
+    if role_for(irb,user_id)!="owner":return response({"error":"Owner access required"},403)
+    try:
+        from participant_hub import remove
+        return response(remove(irb,req.route_params["doc_id"]),200)
+    except ValueError as exc:return response({"error":str(exc)},400)
+    except Exception:
+        logging.exception("Participant document removal failed")
+        return response({"error":"Unable to remove PDF"},500)
+
+@app.route(route="public/studies/{irb_number}/participant-hub",methods=["GET"],auth_level=func.AuthLevel.ANONYMOUS)
+def public_participant_hub(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        from participant_hub import get
+        data=get(req.route_params["irb_number"],public=True)
+        for doc in data["resources"]:
+            doc["url"]="/api/public/studies/"+normalize_irb(req.route_params["irb_number"])+"/participant-hub/documents/"+doc["id"]
+        return response(data,200)
+    except ValueError as exc:return response({"error":str(exc)},404)
+    except Exception:
+        logging.exception("Public participant hub failed")
+        return response({"error":"Unable to load participant information"},500)
+
+@app.route(route="public/studies/{irb_number}/participant-hub/documents/{doc_id}",methods=["GET"],auth_level=func.AuthLevel.ANONYMOUS)
+def public_participant_document(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        from participant_hub import download
+        raw=download(req.route_params["irb_number"],req.route_params["doc_id"])
+        return func.HttpResponse(raw,status_code=200,mimetype="application/pdf",headers={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Content-Disposition":"inline"})
+    except ValueError:return response({"error":"Document not available"},404)
+    except Exception:
+        logging.exception("Public participant document failed")
+        return response({"error":"Unable to load PDF"},500)
