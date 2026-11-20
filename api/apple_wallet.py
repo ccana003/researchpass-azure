@@ -95,12 +95,11 @@ def build_pass(settings, system_settings, name, start_date="", end_date=""):
         "backgroundColor": _rgb(system_settings.get("card_background", "#005030")),
         "foregroundColor": "rgb(255,255,255)",
         "labelColor": "rgb(255,255,255)",
-        "barcodes": [{"format":"PKBarcodeFormatQR","message":serial,"messageEncoding":"iso-8859-1"}],
         "generic": {
             "headerFields": [field("org", "Organization", "University of Miami")],
             "primaryFields": [field("participant", "Participant", name.strip())],
             "secondaryFields": [field("study", "Study", study_title), field("pi", "Principal Investigator", settings.get("pi_name"))],
-            "auxiliaryFields": [field("start", "Start Date", start_date), field("end", "End Date", end_date), field("contact", "Contact", settings.get("contact_email"))],
+            "auxiliaryFields": [field("start", "Start Date", start_date), field("end", "End Date", end_date)],
             "backFields": [field("irb", "Study protocol", irb), field("contact_email", "Study contact email", settings.get("contact_email")), field("contact_phone", "Study contact phone", settings.get("contact_phone")), field("study_notes", "Study description / notes", settings.get("study_notes")), field("author", "Author", "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences.")],
         },
     }
