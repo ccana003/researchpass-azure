@@ -171,6 +171,34 @@ body[data-active-view] #dashboard>.grid>.viewTarget{width:100%}
 #dashboard>.panel:first-child{margin-bottom:24px}
 @media(max-width:1000px){.homeColumns{grid-template-columns:1fr}}
 @media(max-width:680px){.homeMetrics{grid-template-columns:1fr}.homeHeading{align-items:flex-start;flex-direction:column}.homeMetric{min-height:105px}.homeMetric strong{font-size:25px}}
+
+/* Participant Information Hub: match the main study configuration layout */
+#participantHubPanel{border-top:3px solid #f47321}
+#participantHubPanel>h3{border-bottom:1px solid #e6ebe7;padding-bottom:15px;margin-bottom:14px}
+#participantHubPanel .hubIntro{max-width:850px;line-height:1.65;margin-bottom:26px}
+#participantHubPanel .hubField{margin-bottom:22px;min-width:0}
+#participantHubPanel .hubField>label{display:block;font-weight:700;margin-bottom:7px}
+#participantHubPanel .hubField>.small{margin:0 0 10px;line-height:1.5}
+#participantHubPanel textarea{display:block;width:100%;max-width:100%;min-height:112px;padding:13px 14px;resize:vertical;font:inherit;line-height:1.55;border:1px solid #b9c8bd;border-radius:8px;background:#fff}
+#participantHubPanel select,#participantHubPanel input[type=file]{display:block;width:100%;max-width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd6ce;border-radius:8px;background:#fff;font:inherit}
+#participantHubPanel .hubPublish{padding:18px 20px;margin:8px 0 20px;background:#f5f8f6;border:1px solid #dce7df;border-radius:10px}
+#participantHubPanel .hubCheckLabel{display:flex;align-items:center;gap:12px;font-weight:700;cursor:pointer;margin:0}
+#participantHubPanel .hubCheckLabel input{appearance:auto;width:18px;height:18px;min-width:18px;margin:0;accent-color:#005030}
+#participantHubPanel .hubPublish>.small{margin:10px 0 0 30px;line-height:1.55}
+#participantHubPanel .hubActions{display:flex;gap:12px;align-items:center;margin:14px 0 6px}
+#participantHubPanel .hubDocumentsSection{border-top:1px solid #e5ebe6;margin-top:30px;padding-top:26px}
+#participantHubPanel .hubDocumentsSection h4{font-size:18px;color:#173b2a;margin:0 0 7px}
+#participantHubPanel .hubUploadGrid{display:grid;grid-template-columns:minmax(210px,1fr) minmax(280px,2fr);gap:18px;align-items:end;margin-top:22px}
+#participantHubPanel .hubUploadGrid .hubField{margin-bottom:0}
+#participantHubPanel .hubDocumentList{display:grid;gap:10px;margin:18px 0}
+#participantHubPanel .hubDocumentList>.study{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border:1px solid #e0e7e1;border-radius:8px;background:#f9fbf9}
+#participantHubPanel .hubSafetyNote{margin-top:26px;padding:16px 18px;border-left:4px solid #f47321;border-radius:6px;background:#fff7ef;line-height:1.65}
+#participantHubPanel .hubLinkBox{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0 12px}
+#participantHubPanel .hubLinkBox.hidden{display:none}
+#participantHubPanel .hubLinkBox a{color:#005030;font-weight:700;text-decoration:underline}
+#participantHubPanel #hubStatus{margin-top:12px}
+@media(max-width:700px){#participantHubPanel .hubUploadGrid{grid-template-columns:1fr}#participantHubPanel .hubPublish{padding:16px}#participantHubPanel .hubPublish>.small{margin-left:0}}
+
 </style>
 </head>
 <body>
@@ -223,7 +251,24 @@ body[data-active-view] #dashboard>.grid>.viewTarget{width:100%}
 <p id="walletQrExpiry" class="small"></p>
 </div><div id="passPreview" class="study hidden" aria-live="polite"></div><div id="googleWalletResult" class="study hidden" aria-live="polite"><strong>Google Wallet test pass</strong><p class="small">This signed link contains synthetic test data. The pass is created when saved to Google Wallet.</p><a id="googleWalletSaveLink" href="#" target="_blank" rel="noopener noreferrer">Open Google Wallet save page</a></div></section>
 <section data-app-view="configuration" class="panel hidden viewTarget" id="ibisInfoPanel"><details class="adminDisclosure"><summary>IBIS study information</summary><div class="adminDisclosureBody"><p class="small">Read-only information synchronized from IBIS. Study team membership does not grant ResearchPass access.</p><div id="ibisInfoContent" aria-live="polite" class="small">Select a study to view imported information.</div></div></details></section>
-<section data-app-view="configuration" class="panel hidden viewTarget" id="participantHubPanel"><h3>Participant Information Hub</h3><p class="small">Publish only approved, general study materials. Do not upload signed consent, participant information, personalized medication instructions, or individual appointment schedules.</p><form id="hubForm"><label for="hubOverview">General study overview</label><textarea id="hubOverview" maxlength="3000" rows="4" placeholder="General information for all participants"></textarea><label for="hubContacts">Study contacts and locations</label><textarea id="hubContacts" maxlength="3000" rows="4" placeholder="General contact numbers, locations, and directions"></textarea><label><input type="checkbox" id="hubPublished" style="width:auto"> Publish this information for anyone with the study link</label><p class="small">Publishing makes all uploaded documents publicly accessible. Review each document for sensitive information before publishing.</p><button id="hubSave" type="submit">Save participant information</button></form><div style="margin-top:18px"><h4>General study documents (PDF only, up to 5 MB)</h4><label for="hubDocumentKind">Document category</label><select id="hubDocumentKind"><option value="consent">Unsigned consent reference</option><option value="medication">General medication information</option><option value="guide">Participant guide</option><option value="faq">Study FAQ</option><option value="directions">Locations and directions</option></select><label for="hubDocumentFile">Select approved PDF</label><input id="hubDocumentFile" type="file" accept=".pdf,application/pdf"><button id="hubUpload" type="button">Upload PDF</button><div id="hubDocuments" aria-live="polite"></div></div><p class="small">For appointment dates, medication instructions, and individualized study activities, follow the instructions provided directly by your study team.</p><div id="hubLinkBox" class="hidden"><a id="hubLink" target="_blank" rel="noopener">Open published participant page</a> <button type="button" id="hubCopy">Copy link</button></div><p id="hubStatus" class="small" role="status"></p></section>
+<section data-app-view="configuration" class="panel hidden viewTarget" id="participantHubPanel">
+<h3>Participant Information Hub</h3>
+<p class="small hubIntro">Share approved, general study information with participants through a single study link. Do not include signed consent forms, individual appointment schedules, or participant-specific medical instructions.</p>
+<form id="hubForm">
+<div class="hubField"><label for="hubOverview">General study overview</label><p class="small">A brief, participant-friendly description of the study.</p><textarea id="hubOverview" maxlength="3000" rows="4" placeholder="Describe the study and what participants should know in general."></textarea></div>
+<div class="hubField"><label for="hubContacts">Study contacts and locations</label><p class="small">General study team contact information, clinic locations, and directions.</p><textarea id="hubContacts" maxlength="3000" rows="4" placeholder="Study coordinator, contact phone, email, and clinic location."></textarea></div>
+<div class="hubPublish"><label for="hubPublished" class="hubCheckLabel"><input type="checkbox" id="hubPublished"><span>Publish participant information</span></label><p class="small">When published, anyone with the study link can read this information and access uploaded documents. Check all materials before publishing.</p></div>
+<div class="hubActions"><button id="hubSave" type="submit">Save participant information</button></div>
+</form>
+<div class="hubDocumentsSection"><h4>General study documents</h4><p class="small">Upload approved PDF documents, up to 5 MB each. Maximum 20 documents per study.</p>
+<div class="hubUploadGrid"><div class="hubField"><label for="hubDocumentKind">Document category</label><select id="hubDocumentKind"><option value="consent">Unsigned consent reference</option><option value="medication">General medication information</option><option value="guide">Participant guide</option><option value="faq">Study FAQ</option><option value="directions">Locations and directions</option></select></div>
+<div class="hubField"><label for="hubDocumentFile">Select approved PDF</label><input id="hubDocumentFile" type="file" accept=".pdf,application/pdf"></div></div>
+<div class="hubActions"><button id="hubUpload" type="button">Upload PDF</button></div><p class="small">Filenames may contain letters, numbers, spaces, hyphens, underscores, and parentheses. Example: Study Consent Form.pdf</p>
+<div id="hubDocuments" class="hubDocumentList" aria-live="polite"></div></div>
+<div class="hubSafetyNote">For appointment dates, medication instructions, and individualized study activities, participants should follow the instructions provided directly by their study team.</div>
+<div id="hubLinkBox" class="hidden hubLinkBox"><a id="hubLink" target="_blank" rel="noopener">Open published participant page</a><button type="button" id="hubCopy" class="secondary">Copy link</button></div>
+<p id="hubStatus" class="small" role="status"></p>
+</section>
 <section data-app-view="configuration" class="panel hidden viewTarget" id="settingsPanel"><h3>Participant ID configuration</h3><p class="small">Study owners configure the information displayed on future wallet passes. Dates are optional unless required by the study.</p><form id="settingsForm"><div class="grid"><div><label for="passTitle">Display study name</label><input id="passTitle" maxlength="250"></div><div><label for="piName">Principal investigator</label><input id="piName" maxlength="250"></div><div><label for="contactEmail">Study contact email</label><input id="contactEmail" type="email" maxlength="250"></div><div><label for="contactPhone">Study contact phone</label><input id="contactPhone" type="tel" maxlength="250"></div></div><div class="studyNotesField" style="margin:22px 0 26px"><label for="studyNotes">Study description / notes (up to 1,000 characters)</label><textarea id="studyNotes" maxlength="1000" rows="6" style="display:block;width:100%;min-height:150px;resize:vertical;margin-top:8px" placeholder="Information for participants that will appear on their Apple Wallet and Google Wallet passes"></textarea></div><div style="display:grid;gap:12px;margin:0 0 20px"><label><input id="startRequired" type="checkbox" style="display:inline;width:auto;margin:0 8px 12px 0">Require participant start date</label><label><input id="endRequired" type="checkbox" style="display:inline;width:auto;margin:0 8px 12px 0">Require participant end date</label></div><button id="saveSettings" type="submit">Save configuration</button></form><p class="small" id="settingsReadOnly"></p></section>
 <section data-app-view="studies" class="panel hidden viewTarget" id="ownerPanel"><h3>Authorize a study team member</h3><p class="small">Study owners can grant issuer access to another registered ResearchPass POC account.</p><form id="userForm" class="grid"><div><label for="userIrb">IRB protocol number</label><input id="userIrb" required placeholder="POC-2026-002"></div><div><label for="userId">ResearchPass user ID (UUID)</label><input id="userId" required placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div><div><button type="submit">Grant issuer access</button></div></form><p class="small">The user ID is provided when a new account is created. Only owners can grant access.</p></section>
 </section>
