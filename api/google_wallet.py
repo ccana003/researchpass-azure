@@ -76,7 +76,7 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
         generic_object["textModulesData"].insert(1, {
             "id": "participant_resources",
             "header": "Study Information & Resources",
-            "body": "Open the study's general information, documents, and contacts using the link below."
+            "body": hub_url
         })
     if settings.get("study_notes"):
         generic_object["textModulesData"].append({"id": "study_notes", "header": "Study description / notes", "body": str(settings["study_notes"])[:1000]})
