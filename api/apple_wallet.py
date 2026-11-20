@@ -104,6 +104,11 @@ def build_pass(settings, system_settings, name, start_date="", end_date=""):
             "backFields": [field("irb", "Study protocol", irb), field("contact_email", "Study contact email", settings.get("contact_email")), field("contact_phone", "Study contact phone", settings.get("contact_phone")), field("study_notes", "Study description / notes", settings.get("study_notes")), field("author", "Author", "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences.")],
         },
     }
+    if settings.get("participant_hub_url"):
+        # Apple Wallet recognizes https links in back fields and makes them tappable.
+        pass_json["generic"]["backFields"].append(
+            field("participant_resources", "Study Information & Resources", settings["participant_hub_url"])
+        )
     files = {"pass.json": json.dumps(pass_json, ensure_ascii=False, separators=(",",":")).encode("utf-8")}
     files.update(_assets())
     manifest = {filename: hashlib.sha1(data).hexdigest() for filename, data in files.items()}
