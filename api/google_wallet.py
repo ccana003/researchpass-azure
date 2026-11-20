@@ -66,6 +66,24 @@ def generate_save_url(settings, participant_name, start_date="", end_date="", re
     hub_url = settings.get("participant_hub_url")
     if hub_url:
         # A native tappable Wallet link, plus a clearly labeled detail entry.
+        # Google Wallet's documented bottom-of-pass website call to action.
+        # Unlike text modules, this is a native tappable link on Android.
+        generic_object["appLinkData"] = {
+            "webAppLinkInfo": {
+                "appTarget": {
+                    "targetUri": {
+                        "uri": hub_url,
+                        "description": "Study Information & Resources"
+                    }
+                }
+            },
+            "displayText": {
+                "defaultValue": {
+                    "language": "en-US",
+                    "value": "Study Information & Resources"
+                }
+            }
+        }
         generic_object["linksModuleData"] = {
             "uris": [{
                 "id": "study_resources",
