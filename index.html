@@ -234,7 +234,18 @@ const API="https://researchpass-api-dev-czc2e6b8d8fyg0c6.eastus2-01.azurewebsite
 let isSystemAdmin=false,allInstitutionalStudies=[];
 let token="",account="",selectedRole="",selectedIrb="",settingsForPreview=null,adminSettings=null,registryEvents=[],accessMembers=[],registeredStudyCount=null;
 const el=id=>document.getElementById(id);
-function notice(message,error=false){const n=el("message");n.textContent=message;n.className="message"+(error?" error":"");}
+let noticeDismissTimer=null;
+function dismissNotice(){
+  if(noticeDismissTimer){clearTimeout(noticeDismissTimer);noticeDismissTimer=null;}
+  const n=el("message");n.classList.add("hidden");n.textContent="";
+}
+function notice(message,error=false){
+  const n=el("message");
+  if(noticeDismissTimer)clearTimeout(noticeDismissTimer);
+  n.textContent=message;
+  n.className="message"+(error?" error":"");
+  noticeDismissTimer=setTimeout(dismissNotice,error?10000:4500);
+}
 function clearNotice(){el("message").classList.add("hidden");}
 function setBusy(form,busy){form.querySelectorAll("button").forEach(b=>b.disabled=busy);}
 async function request(path,body,method="POST"){const headers={"Content-Type":"application/json"};if(token)headers.Authorization="Bearer "+token;let response;try{response=await fetch(API+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:"no-store"});}catch(e){throw Error("Cannot reach the ResearchPass API. The Azure Function App may need its CORS settings updated for this website.");}let data={};try{data=await response.json();}catch(e){}if(!response.ok){if(response.status===401&&token){signOut();}throw Error(data.error||"Request failed (HTTP "+response.status+")");}return data;}
