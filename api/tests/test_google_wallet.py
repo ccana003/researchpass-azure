@@ -58,12 +58,27 @@ class GoogleWalletLinkTests(unittest.TestCase):
         self.assertEqual(wallet_payload["genericClasses"][0]["id"], "1234567890123456789.researchpass_test")
         obj = wallet_payload["genericObjects"][0]
         self.assertEqual(obj["classId"], "1234567890123456789.researchpass_test")
-        self.assertEqual(obj["subheader"]["defaultValue"]["value"], "Synthetic Participant")
+        self.assertEqual(obj["header"]["defaultValue"]["value"], "Synthetic Participant")
+        self.assertEqual(obj["subheader"]["defaultValue"]["value"], "Synthetic Study")
+        self.assertNotIn("barcode", obj)
+        self.assertEqual(next(item["body"] for item in obj["textModulesData"] if item.get("id") == "participant_name"), "Synthetic Participant")
         self.assertEqual(obj["textModulesData"][-1]["body"], "2026-01-01")
         self.assertLessEqual(len(url), 8000)
         author = next(item for item in obj["textModulesData"] if item.get("id") == "institutional_author")
         self.assertEqual(author["header"], "Author")
         self.assertEqual(author["body"], "This pass was developed by the University of Miami CTSI with support from grant UM1TR004556 of the National Center for Advancing Translational Sciences.")
+
+    def test_published_hub_link_is_in_google_wallet(self):
+        settings = self._settings()
+        settings["participant_hub_url"] = "https://example.test/participant.html?study=POC-2026-001"
+        with patch.dict(os.environ, self._env(), clear=False):
+            url = generate_save_url(settings, "Synthetic Participant")
+        token = url.rsplit("/", 1)[1]
+        obj = jwt.decode(token, self.public_pem, algorithms=["RS256"], audience="google")["payload"]["genericObjects"][0]
+        link = obj["linksModuleData"]["uris"][0]
+        self.assertEqual(link["uri"], settings["participant_hub_url"])
+        self.assertEqual(link["description"], "Study Information & Resources")
+        self.assertNotIn("barcode", obj)
 
     def test_requires_service_account_configuration(self):
         with patch.dict(os.environ, {"RESEARCHPASS_GOOGLE_SERVICE_ACCOUNT_JSON": ""}, clear=False):
