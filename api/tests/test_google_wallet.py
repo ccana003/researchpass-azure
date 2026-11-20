@@ -55,9 +55,9 @@ class GoogleWalletLinkTests(unittest.TestCase):
         self.assertEqual(claims["typ"], "savetowallet")
         self.assertEqual(claims["origins"], ["https://example.test"])
         wallet_payload = claims["payload"]
-        self.assertEqual(wallet_payload["genericClasses"][0]["id"], "1234567890123456789.researchpass_test")
+        self.assertEqual(wallet_payload["genericClasses"][0]["id"], "1234567890123456789.researchpass_test_POC-2026-001")
         obj = wallet_payload["genericObjects"][0]
-        self.assertEqual(obj["classId"], "1234567890123456789.researchpass_test")
+        self.assertEqual(obj["classId"], "1234567890123456789.researchpass_test_POC-2026-001")
         self.assertEqual(obj["header"]["defaultValue"]["value"], "Synthetic Participant")
         self.assertEqual(obj["subheader"]["defaultValue"]["value"], "Synthetic Study")
         self.assertNotIn("barcode", obj)
@@ -74,16 +74,20 @@ class GoogleWalletLinkTests(unittest.TestCase):
         with patch.dict(os.environ, self._env(), clear=False):
             url = generate_save_url(settings, "Synthetic Participant")
         token = url.rsplit("/", 1)[1]
-        obj = jwt.decode(token, self.public_pem, algorithms=["RS256"], audience="google")["payload"]["genericObjects"][0]
+        payload = jwt.decode(token, self.public_pem, algorithms=["RS256"], audience="google")["payload"]
+        obj = payload["genericObjects"][0]
+        generic_class = payload["genericClasses"][0]
         link = obj["linksModuleData"]["uris"][0]
+        self.assertEqual(link["id"], "link-0")
         self.assertEqual(link["uri"], settings["participant_hub_url"])
         self.assertEqual(link["description"], "Study Information & Resources")
         resources = next(item for item in obj["textModulesData"] if item.get("id") == "participant_resources")
         self.assertEqual(resources["header"], "Study Information & Resources")
         self.assertIn("Open the study", resources["body"])
-        app_link = obj["appLinkData"]
-        self.assertEqual(app_link["webAppLinkInfo"]["appTarget"]["targetUri"]["uri"], settings["participant_hub_url"])
-        self.assertEqual(app_link["displayText"]["defaultValue"]["value"], "Study Information & Resources")
+        homepage = generic_class["homepageUri"]
+        self.assertEqual(homepage["uri"], settings["participant_hub_url"])
+        self.assertEqual(homepage["description"], "Study Information & Resources")
+        self.assertNotIn("appLinkData", obj)
         self.assertNotIn("barcode", obj)
 
     def test_requires_service_account_configuration(self):
