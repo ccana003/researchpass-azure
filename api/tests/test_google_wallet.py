@@ -78,6 +78,9 @@ class GoogleWalletLinkTests(unittest.TestCase):
         link = obj["linksModuleData"]["uris"][0]
         self.assertEqual(link["uri"], settings["participant_hub_url"])
         self.assertEqual(link["description"], "Study Information & Resources")
+        resources = next(item for item in obj["textModulesData"] if item.get("id") == "participant_resources")
+        self.assertEqual(resources["header"], "Study Information & Resources")
+        self.assertEqual(resources["body"], settings["participant_hub_url"])
         self.assertNotIn("barcode", obj)
 
     def test_requires_service_account_configuration(self):
